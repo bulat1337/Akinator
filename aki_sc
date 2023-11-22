@@ -1,0 +1,5 @@
+#!/bin/bash
+make clean
+make
+./aki.out
+dot -Tpng b_tree_graphic_dump.dot -o b_tree_graphic_dump.png -Gdpi=100
