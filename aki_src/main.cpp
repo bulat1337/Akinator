@@ -17,15 +17,15 @@ int main()
 	b_tree_insert(btr, 54);
 
 
-
-	FILE *data_base = fopen("data_base.txt", "w");
-	print_node(btr->node, btr->root, data_base);
-	fclose(data_base);
+	FILE *data_base = create_data_base(btr).data_base;
 
 	data_base = fopen("data_base.txt", "r");
 	struct B_tree *btr_2 = construct_b_tree(data_base).btr;
 	generate_code_for_graphic_dump(btr_2);
 	b_tree_dump(btr_2, ALL_GOOD, __func__);
+
+	op_del(btr_2);
+	op_del(btr);
 
 	return 0;
 }

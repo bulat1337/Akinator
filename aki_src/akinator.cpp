@@ -8,6 +8,28 @@
 
 FILE *log_file;
 
+struct B_tree_node
+{
+	double data;
+	int left;
+	int right;
+};
+
+struct B_tree
+{
+	struct B_tree_node *node;
+	int root;
+	size_t capacity;
+	int current_free;
+};
+
+struct node_charachteristics
+{
+	char *name;
+	char *color;
+	char *label;
+};
+
 struct Op_new_result op_new(size_t starter_capacity)
 {
 	struct Op_new_result result =
@@ -110,7 +132,9 @@ struct Generate_code_for_graphic_dump_result generate_code_for_graphic_dump(stru
 
 	#undef WRITE_TO_DUMP_FILE
 
+	free(nd_description.label);
 	fclose(result.graphic_dump_code_file_ptr);
+
 	return result;
 }
 
@@ -249,9 +273,9 @@ error_t b_tree_dump(const struct B_tree *btr, error_t error_code, const char *fu
 		}\
 
 	DUMP_W_COND(btr->node, "ID:");
-	DUMP_W_COND(&(btr->node[0]->data), "        data:");
-	DUMP_W_COND(&(btr->node[0]->left), "        left:");
-	DUMP_W_COND(&(btr->node[0]->right), "        right:\n");
+	DUMP_W_COND(&(btr->node[0].data), "        data:");
+	DUMP_W_COND(&(btr->node[0].left), "        left:");
+	DUMP_W_COND(&(btr->node[0].right), "        right:\n");
 	for(size_t ID = 0; ID < btr->capacity; ID++)
 	{
 		DUMP_W_COND(&ID &&  &((btr->node)[ID].data),"[%lu]%13.3lf", ID, (btr->node)[ID].data);
@@ -272,21 +296,6 @@ error_t b_tree_dump(const struct B_tree *btr, error_t error_code, const char *fu
 	#undef DUMP_W_COND
 
 	return dump_function_error_code;
-}
-
-void print_node(struct B_tree_node *node, int ID, FILE *data_base)
-{
-    if(ID == FREE_ELEM_MARKER)
-    {
-        fprintf(data_base, "nil ");
-        return;
-    }
-
-    fprintf(data_base, "( ");
-    fprintf(data_base, "%.2lf ", node[ID].data);
-    print_node(node, node[ID].left, data_base);
-    print_node(node, node[ID].right, data_base);
-    fprintf(data_base, ") ");
 }
 
 struct Construct_b_tree_result construct_b_tree(FILE *data_base)
@@ -348,5 +357,59 @@ struct Construct_b_tree_result construct_b_tree(FILE *data_base)
 	result.btr->root = current_node_ID;
 	read_node(&data_base_lexemes, &(current_node_ID), result.btr->node);
 
+	free(data_base_lexemes.buf);
+	free(data_base_buf_w_info.buf);
+
 	return result;
+}
+
+void op_del(struct B_tree *btr)
+{
+	btr->capacity = 0;
+	btr->current_free = -666;
+	btr->root = -666;
+	fclose(log_file);
+
+	free_memory(btr);
+
+	WRITE_IN_LOG_FILE("binary_tree has been deleted\n");
+}
+
+struct Create_data_base_result create_data_base(struct B_tree *btr)
+{
+	struct Create_data_base_result result=
+	{
+		.error_code = ALL_GOOD,
+		.data_base = fopen("data_base.txt", "w"),
+	};
+
+	if(result.data_base == NULL)
+	{
+		perror("ERROR:");
+		result.error_code = UNABLE_TO_OPEN_FILE;
+
+		return result;
+	}
+
+	print_node(btr->node, btr->root, result.data_base);
+
+	fclose(result.data_base);
+
+	return result;
+}
+
+error_t b_tree_verifier(struct B_tree *btr)
+{
+	error_t error_code = ALL_GOOD;
+	if(btr == NULL)
+	{
+		error_code |= B_TREE_ZERO_PTR;
+	}
+
+	if(btr->node == NULL)
+	{
+		error_code |= B_TREE_NODE_ZERO_PTR;
+	}
+
+	return error_code
 }

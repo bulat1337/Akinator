@@ -6,6 +6,28 @@
 
 extern FILE *log_file;
 
+struct B_tree_node
+{
+	double data;
+	int left;
+	int right;
+};
+
+struct B_tree
+{
+	struct B_tree_node *node;
+	int root;
+	size_t capacity;
+	int current_free;
+};
+
+struct node_charachteristics
+{
+	char *name;
+	char *color;
+	char *label;
+};
+
 error_t mark_b_tree_nodes_as_free(struct B_tree_node *node, size_t size, size_t start_ID)
 {
 	error_t error_code = ALL_GOOD;
@@ -210,4 +232,25 @@ void read_node(struct Lexemes_w_carriage *data_base_buf_w_info, int *current_nod
 
 	#undef IS_CURRENT_LEXEM
 	#undef MOVE_CARRIAGE
+}
+
+void free_memory(struct B_tree *btr)
+{
+    free(btr->node);
+    free(btr);
+}
+
+void print_node(struct B_tree_node *node, int ID, FILE *data_base)
+{
+    if(ID == FREE_ELEM_MARKER)
+    {
+        fprintf(data_base, "nil ");
+        return;
+    }
+
+    fprintf(data_base, "( ");
+    fprintf(data_base, "%.2lf ", node[ID].data);
+    print_node(node, node[ID].left, data_base);
+    print_node(node, node[ID].right, data_base);
+    fprintf(data_base, ") ");
 }

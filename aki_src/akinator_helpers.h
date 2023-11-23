@@ -14,5 +14,7 @@ void connect_nodes(int ID, struct B_tree_node *node, FILE *graphic_dump_code_fil
 error_t b_tree_realloc(struct B_tree *btr);
 void read_node(struct Lexemes_w_carriage *data_base_buf_w_info, int *current_node_ID,
 				struct B_tree_node *node);
+void free_memory(struct B_tree *btr);
+void print_node(struct B_tree_node *node, int ID, FILE *data_base);
 
 #endif
