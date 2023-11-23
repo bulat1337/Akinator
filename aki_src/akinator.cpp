@@ -1,7 +1,10 @@
 #include <stdio.h>
+#include <math.h>
+#include <string.h>
 
 #include "akinator.h"
 #include "akinator_helpers.h"
+#include "../buffer_process_src/buffer_process.h"
 
 FILE *log_file;
 
@@ -37,6 +40,7 @@ struct Op_new_result op_new(size_t starter_capacity)
 	btr->node = (struct B_tree_node *)calloc(btr->capacity, sizeof(struct B_tree_node));
 
 	mark_b_tree_nodes_as_free(btr->node, btr->capacity, 0);
+	btr->node[0].right = 1;
 
 	btr->root = FREE_ELEM_MARKER;
 
@@ -94,21 +98,6 @@ struct Generate_code_for_graphic_dump_result generate_code_for_graphic_dump(stru
 		"label = \"{ROOT: %d| CUR_FREE: %d | CAPACITY: %lu}\"];\n"
 	"}\n", btr->root, btr->current_free, btr->capacity);
 
-	//print
-
-// 	if(btr->root >= 0)
-// 	{
-// 		//	print root
-// 		nd_description.color = "#00FA9A";	// LIGHT_GREEN
-//
-// 		snprintf(nd_description.label, NODE_LABEL_STR_SIZE,
-// 					"{ID: %d | val: %.2lf |{L: %d | R: %d}}",
-// 					btr->root, btr->node[btr->root].data,
-// 					btr->node[btr->root].left, btr->node[btr->root].right);
-//
-// 		create_node(btr->root, &nd_description, result.graphic_dump_code_file_ptr);
-// 	}
-
 	if(btr->root >= 0)
 	{
 		print_regular_nodes(btr->root, btr->node,
@@ -148,7 +137,7 @@ struct B_tree_insert_result b_tree_insert(struct B_tree *btr, b_tree_elem_t valu
 
 
 		btr->current_free = btr->node[btr->current_free].right;
-		printf("btr->current_free is now %d\n", btr->current_free);
+		WRITE_IN_LOG_FILE("btr->current_free is now %d\n", btr->current_free);
 
 		btr->node[btr->root].left = FREE_ELEM_MARKER;
 		btr->node[btr->root].right = FREE_ELEM_MARKER;
@@ -164,16 +153,13 @@ struct B_tree_insert_result b_tree_insert(struct B_tree *btr, b_tree_elem_t valu
 	WRITE_IN_LOG_FILE("current: %d\n", current);
 	while(true)
 	{
-		// Сравниваем значение нового узла с текущим узлом в дереве
 		if (value < btr->node[current].data)
 		{
-			// Если значение нового узла меньше текущего, идем влево
 			WRITE_IN_LOG_FILE( "value[%.2lf] < btr->node[current].data[%.2lf]\n",
 								value, btr->node[current].data);
 
 			if (btr->node[current].left == FREE_ELEM_MARKER)
 			{
-				// Если нет левого потомка, вставляем новый узел здесь
 				WRITE_IN_LOG_FILE( "btr->node[current].left[%d] == FREE_ELEM_MARKER\n",
 								   btr->node[current].left);
 
@@ -181,7 +167,6 @@ struct B_tree_insert_result b_tree_insert(struct B_tree *btr, b_tree_elem_t valu
 				break;
 			} else
 			{
-				// Иначе, переходим к левому потомку
 				WRITE_IN_LOG_FILE( "btr->node[current].left[%d] != FREE_ELEM_MARKER\n",
 								   btr->node[current].left);
 
@@ -190,13 +175,11 @@ struct B_tree_insert_result b_tree_insert(struct B_tree *btr, b_tree_elem_t valu
 			}
 		} else
 		{
-			// Если значение нового узла больше или равно текущему, идем вправо
 			WRITE_IN_LOG_FILE( "value[%.2lf] >= btr->node[current].data[%.2lf]\n",
 								value, btr->node[current].data);
 
 			if (btr->node[current].right == FREE_ELEM_MARKER)
 			{
-				// Если нет правого потомка, вставляем новый узел здесь
 				WRITE_IN_LOG_FILE( "btr->node[current].right[%d] == FREE_ELEM_MARKER\n",
 								   btr->node[current].right);
 
@@ -208,7 +191,6 @@ struct B_tree_insert_result b_tree_insert(struct B_tree *btr, b_tree_elem_t valu
 				break;
 			} else
 			{
-				// Иначе, переходим к правому потомку
 				WRITE_IN_LOG_FILE( "btr->node[current].right[%d] != FREE_ELEM_MARKER\n",
 								   btr->node[current].right);
 
@@ -229,7 +211,7 @@ struct B_tree_insert_result b_tree_insert(struct B_tree *btr, b_tree_elem_t valu
 	btr->current_free = next_current_free;
 
 	b_tree_dump(btr, result.error_code, __func__);
-	
+
 	return result;
 }
 
@@ -267,9 +249,9 @@ error_t b_tree_dump(const struct B_tree *btr, error_t error_code, const char *fu
 		}\
 
 	DUMP_W_COND(btr->node, "ID:");
-	DUMP_W_COND(btr->node->data, "        data:");
-	DUMP_W_COND(btr->node->left, "        left:");
-	DUMP_W_COND(btr->node->right, "        right:\n");
+	DUMP_W_COND(&(btr->node[0]->data), "        data:");
+	DUMP_W_COND(&(btr->node[0]->left), "        left:");
+	DUMP_W_COND(&(btr->node[0]->right), "        right:\n");
 	for(size_t ID = 0; ID < btr->capacity; ID++)
 	{
 		DUMP_W_COND(&ID &&  &((btr->node)[ID].data),"[%lu]%13.3lf", ID, (btr->node)[ID].data);
@@ -279,9 +261,6 @@ error_t b_tree_dump(const struct B_tree *btr, error_t error_code, const char *fu
 		WRITE_IN_LOG_FILE("\n");
 
 	}
-
-	// size_t current_free_ID = get_current_free_ID(btr);
-
 	DUMP_W_COND(&(btr->current_free), "current free: %d\n", btr->current_free);
 	DUMP_W_COND(&(btr->capacity), "capacity: %lu\n", btr->capacity);
 
@@ -295,3 +274,79 @@ error_t b_tree_dump(const struct B_tree *btr, error_t error_code, const char *fu
 	return dump_function_error_code;
 }
 
+void print_node(struct B_tree_node *node, int ID, FILE *data_base)
+{
+    if(ID == FREE_ELEM_MARKER)
+    {
+        fprintf(data_base, "nil ");
+        return;
+    }
+
+    fprintf(data_base, "( ");
+    fprintf(data_base, "%.2lf ", node[ID].data);
+    print_node(node, node[ID].left, data_base);
+    print_node(node, node[ID].right, data_base);
+    fprintf(data_base, ") ");
+}
+
+struct Construct_b_tree_result construct_b_tree(FILE *data_base)
+{
+	WRITE_IN_LOG_FILE("construct_b_tree log:\n");
+	Construct_b_tree_result result =
+	{
+		.error_code = ALL_GOOD,
+		.btr = op_new(10).new_btr,
+	};
+
+	struct Buf_w_carriage_n_len data_base_buf_w_info = {};
+
+	data_base_buf_w_info.length = get_file_length(data_base);
+	data_base_buf_w_info.buf = (char *)calloc(data_base_buf_w_info.length, sizeof(char));
+	if(data_base_buf_w_info.buf == NULL)
+	{
+		perror("ERROR:");
+		result.error_code = UNABLE_TO_ALLOCATE;
+		return result;
+	}
+
+	size_t read_elems_amount =
+		fread(data_base_buf_w_info.buf, sizeof(char), data_base_buf_w_info.length, data_base);
+	if(read_elems_amount != data_base_buf_w_info.length)
+	{
+		if(ferror(data_base))
+		{
+			perror("ERROR:");
+
+			result.error_code = UNEXPECTED_WRITTEN_ELEMS;
+
+			return result;
+		}
+		else if(feof(data_base))
+		{
+			fprintf(stderr ,"read_elems_amount != data_base_buf_w_info.length because end of the file "
+			"EOF was reached.\n");
+		}
+	}
+
+	size_t amount_of_lexems = count_buf_lexemes(data_base_buf_w_info);
+	struct Lexemes_w_carriage data_base_lexemes =
+	{
+		.buf = (char * *)calloc(amount_of_lexems, sizeof(char *)),
+		.carriage = 0,
+	};
+
+	if(data_base_lexemes.buf == NULL)
+	{
+		perror("ERROR:");
+		result.error_code = UNABLE_TO_ALLOCATE;
+		return result;
+	}
+
+	lexemes_ptr_arranger(data_base_lexemes.buf, data_base_buf_w_info);
+
+	int current_node_ID = 0;
+	result.btr->root = current_node_ID;
+	read_node(&data_base_lexemes, &(current_node_ID), result.btr->node);
+
+	return result;
+}
