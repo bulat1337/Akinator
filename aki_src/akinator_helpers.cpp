@@ -135,12 +135,18 @@ void read_node(struct Lexemes_w_carriage *data_base_buf_w_info, int *current_nod
 
 	WRITE_IN_LOG_FILE("*(current_node_ID): %d\n", *(current_node_ID));
 
+	int current_function_node_ID = *(current_node_ID);
+
+	WRITE_IN_LOG_FILE("current_function_node_ID: %d\n", current_function_node_ID);
+
 	if(IS_CURRENT_LEXEM("nil"))
 	{
 		WRITE_IN_LOG_FILE("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
 				data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
-				WRITE_IN_LOG_FILE("*returning*\n");
+		WRITE_IN_LOG_FILE("*returning*\n");
+
 		MOVE_CARRIAGE;
+
 		return;
 	}
 
@@ -148,34 +154,42 @@ void read_node(struct Lexemes_w_carriage *data_base_buf_w_info, int *current_nod
 	if(IS_CURRENT_LEXEM("("))
 	{
 		WRITE_IN_LOG_FILE("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
-				data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
+						   data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
 
 		MOVE_CARRIAGE;
 
 		// Write_in_data
 		sscanf(data_base_buf_w_info->buf[data_base_buf_w_info->carriage],
-				"%lf", &(node[*(current_node_ID)].data));
+				"%lf", &(node[current_function_node_ID].data));
 
-		WRITE_IN_LOG_FILE("node[%d].data = %lf\n", *(current_node_ID),
-				node[*(current_node_ID)].data);
+		WRITE_IN_LOG_FILE("node[%d].data = %lf\n", current_function_node_ID,
+						   node[current_function_node_ID].data);
 
 		MOVE_CARRIAGE;
 
-		// Right_node_process
+		// Left_node_process
 		if(IS_CURRENT_LEXEM("nil"))
 		{
 			WRITE_IN_LOG_FILE("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
-				data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
-			node[*(current_node_ID)].left = FREE_ELEM_MARKER;
-			WRITE_IN_LOG_FILE("node[%d].left = %d\n", *(current_node_ID), node[*(current_node_ID)].left);
+							   data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
+
+			node[current_function_node_ID].left = FREE_ELEM_MARKER;
+
+			WRITE_IN_LOG_FILE("node[%d].left = %d\n",
+							   current_function_node_ID, node[current_function_node_ID].left);
+
 			MOVE_CARRIAGE;
 		}
 		else if(IS_CURRENT_LEXEM("("))
 		{
 			WRITE_IN_LOG_FILE("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
-				data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
-			node[*(current_node_ID)].left = ++*(current_node_ID);
-			WRITE_IN_LOG_FILE("node[%d].left = %d\n", *(current_node_ID), node[*(current_node_ID)].left);
+							   data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
+
+			node[current_function_node_ID].left = ++(*current_node_ID);
+
+			WRITE_IN_LOG_FILE("node[%d].left = %d\n",
+							   current_function_node_ID, node[current_function_node_ID].left);
+
 			read_node(data_base_buf_w_info, current_node_ID, node);
 		}
 		else
@@ -187,21 +201,28 @@ void read_node(struct Lexemes_w_carriage *data_base_buf_w_info, int *current_nod
 			exit(EXIT_FAILURE);	// а как иначе?
 		}
 
-		// Left_node_process
+		// Right_node_process
 		if(IS_CURRENT_LEXEM("nil"))
 		{
 			WRITE_IN_LOG_FILE("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
-				data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
-			node[*(current_node_ID)].right = FREE_ELEM_MARKER;
-			WRITE_IN_LOG_FILE("node[%d].right = %d\n", *(current_node_ID), node[*(current_node_ID)].right);
+							   data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
+
+			node[current_function_node_ID].right = FREE_ELEM_MARKER;
+
+			WRITE_IN_LOG_FILE("node[%d].right = %d\n",
+							   current_function_node_ID, node[current_function_node_ID].right);
+
 			MOVE_CARRIAGE;
 		}
 		else if(IS_CURRENT_LEXEM("("))
 		{
 			WRITE_IN_LOG_FILE("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
-				data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
-			node[*(current_node_ID)].right = ++*(current_node_ID);
-			WRITE_IN_LOG_FILE("node[%d].right = %d\n", *(current_node_ID), node[*(current_node_ID)].right);
+							   data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
+			node[current_function_node_ID].right = ++(*current_node_ID);
+
+			WRITE_IN_LOG_FILE("node[%d].right = %d\n",
+							   current_function_node_ID, node[current_function_node_ID].right);
+
 			read_node(data_base_buf_w_info, current_node_ID, node);
 		}
 		else
@@ -218,6 +239,7 @@ void read_node(struct Lexemes_w_carriage *data_base_buf_w_info, int *current_nod
 		{
 			WRITE_IN_LOG_FILE("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
 				data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
+				
 			MOVE_CARRIAGE;
 		}
 		else

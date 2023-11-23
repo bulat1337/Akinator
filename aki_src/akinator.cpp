@@ -366,8 +366,8 @@ struct Construct_b_tree_result construct_b_tree(FILE *data_base)
 void op_del(struct B_tree *btr)
 {
 	btr->capacity = 0;
-	btr->current_free = -666;
-	btr->root = -666;
+	btr->current_free = POISON;
+	btr->root = POISON;
 	fclose(log_file);
 
 	free_memory(btr);
@@ -400,7 +400,7 @@ struct Create_data_base_result create_data_base(struct B_tree *btr)
 
 error_t b_tree_verifier(struct B_tree *btr)
 {
-	error_t error_code = ALL_GOOD;
+	int error_code = ALL_GOOD;
 	if(btr == NULL)
 	{
 		error_code |= B_TREE_ZERO_PTR;
@@ -411,5 +411,5 @@ error_t b_tree_verifier(struct B_tree *btr)
 		error_code |= B_TREE_NODE_ZERO_PTR;
 	}
 
-	return error_code
+	return (error_t)error_code;
 }

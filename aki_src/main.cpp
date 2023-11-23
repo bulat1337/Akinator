@@ -21,9 +21,9 @@ int main()
 
 	data_base = fopen("data_base.txt", "r");
 	struct B_tree *btr_2 = construct_b_tree(data_base).btr;
-	generate_code_for_graphic_dump(btr_2);
 	b_tree_dump(btr_2, ALL_GOOD, __func__);
 
+	generate_code_for_graphic_dump(btr_2);
 	op_del(btr_2);
 	op_del(btr);
 
