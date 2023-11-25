@@ -19,6 +19,7 @@ struct B_tree
 {
 	struct B_tree_node *node;
 	int root;
+
 	size_t capacity;
 	int current_free;
 };
@@ -157,6 +158,7 @@ struct B_tree_insert_result b_tree_insert(struct B_tree *btr, b_tree_elem_t valu
 	{
 		btr->root = btr->current_free;
 
+		// node =
 		btr->node[btr->root].data = value;
 
 
@@ -366,8 +368,8 @@ struct Construct_b_tree_result construct_b_tree(FILE *data_base)
 void op_del(struct B_tree *btr)
 {
 	btr->capacity = 0;
-	btr->current_free = POISON;
-	btr->root = POISON;
+	btr->current_free = INDEX_POISON;
+	btr->root = INDEX_POISON;
 	fclose(log_file);
 
 	free_memory(btr);
@@ -412,4 +414,35 @@ error_t b_tree_verifier(struct B_tree *btr)
 	}
 
 	return (error_t)error_code;
+}
+
+error_t destroy_subtree(struct B_tree *btr, int parent_index, bool is_left_child)
+{
+	if(parent_index < 0)
+	{
+		if(parent_index == FREE_ELEM_MARKER)
+		{
+			return PARENT_NODE_IS_FREE;
+		}
+		else
+		{
+			return INVALID_INDEX;
+		}
+	}
+	if(is_left_child)
+	{
+		node_delete(btr->node, btr->node[parent_index].left);
+		btr->node[parent_index].left = FREE_ELEM_MARKER;
+	}
+	else if(!is_left_child)
+	{
+		node_delete(btr->node, btr->node[parent_index].right);
+		btr->node[parent_index].right = FREE_ELEM_MARKER;
+	}
+	else
+	{
+		return INVALID_VALUE;
+	}
+
+	return ALL_GOOD;
 }

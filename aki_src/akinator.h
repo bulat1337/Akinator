@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #define WRITE_IN_LOG_FILE(...) fprintf(log_file, __VA_ARGS__);
 
@@ -17,6 +18,9 @@ enum Err_ID
 	UNEXPECTED_WRITTEN_ELEMS = 1 << 3,
 	B_TREE_ZERO_PTR          = 1 << 4,
 	B_TREE_NODE_ZERO_PTR     = 1 << 5,
+	INVALID_VALUE            = 1 << 6,
+	INVALID_INDEX            = 1 << 7,
+	PARENT_NODE_IS_FREE      = 1 << 8,
 };
 
 typedef enum Err_ID error_t;
@@ -59,11 +63,11 @@ struct Create_data_base_result
 	FILE *data_base;
 };
 
-const size_t NODE_LABEL_STR_SIZE  = 100;
-const int FREE_ELEM_MARKER        = -1;
-const size_t REALLOC_COEFF        = 2;
-const size_t MINI_BUF_LEN         = 10;
-const size_t POISON  			  = -666;
+const size_t NODE_LABEL_STR_SIZE      = 100;
+const int FREE_ELEM_MARKER            = -1;
+const size_t REALLOC_COEFF            = 2;
+const int INDEX_POISON  			  = -666;
+const b_tree_elem_t DATA_POISON       = NAN;
 
 struct  Op_new_result op_new(size_t starter_capacity);
 struct  Generate_code_for_graphic_dump_result generate_code_for_graphic_dump(struct B_tree *btr);
@@ -73,5 +77,6 @@ struct  Construct_b_tree_result construct_b_tree(FILE *data_base);
 void    op_del(struct B_tree *btr);
 struct  Create_data_base_result create_data_base(struct B_tree *btr);
 error_t b_tree_verifier(struct B_tree *btr);
+error_t destroy_subtree(struct B_tree *btr, int parent_index, bool is_left_child);
 
 #endif
