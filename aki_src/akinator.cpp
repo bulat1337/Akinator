@@ -8,22 +8,6 @@
 
 FILE *log_file;
 
-struct B_tree_node
-{
-	b_tree_elem_t data;
-	struct B_tree_node *left;
-	struct B_tree_node *right;
-};
-
-struct B_tree
-{
-	struct B_tree_node *node;
-	struct B_tree_node *root;
-
-	size_t capacity;
-	struct B_tree_node *current_free;
-};
-
 struct node_charachteristics
 {
 	char *name;
@@ -73,71 +57,70 @@ struct B_tree_ctor_result b_tree_ctor(size_t starter_capacity)
 
 	return result;
 }
-//
-// struct Generate_code_for_graphic_dump_result generate_code_for_graphic_dump(struct B_tree *btr)
-// {
-// 	struct Generate_code_for_graphic_dump_result result =
-// 	{
-// 		.error_code = ALL_GOOD,
-// 		.graphic_dump_code_file_ptr = fopen("b_tree_graphic_dump.dot", "w"),
-// 	};
-//
-// 	if(result.graphic_dump_code_file_ptr == NULL)
-// 	{
-// 		fprintf(stderr, "Unable to open list_graphic_dump.dot\n");
-//
-// 		result.error_code = UNABLE_TO_OPEN_FILE;
-// 		return result;
-// 	}
-//
-// 	#define WRITE_TO_DUMP_FILE(...) fprintf(result.graphic_dump_code_file_ptr, __VA_ARGS__);
-//
-// 	WRITE_TO_DUMP_FILE("digraph BinaryTree {\n"
-// 	"bgcolor = \"#FFDAB9\";\n"
-// 	"edge[minlen = 3, penwidth = 3; color = \"black\"];\n"
-// 	"node[shape = \"rectangle\", style = \"rounded, filled\",\n"
-// 	"\tfillcolor = \"#F08080\",\n"
-// 	"\tfontsize = 30,\n"
-// 	"\theight = 3,\n"
-// 	"\tpenwidth = 5, color = \"#F0E68C\"];\n");
-//
-// 	struct node_charachteristics nd_description =
-// 	{
-// 		.color = "#F08080",
-// 		.name = "node_",
-// 	};
-//
-// 	nd_description.label = (char *)calloc((NODE_LABEL_STR_SIZE), sizeof(char));
-// 	if(nd_description.label == NULL)
-// 	{
-// 		fprintf(stderr, "Unable to allocate nd_description.label\n");
-// 		result.error_code = UNABLE_TO_ALLOCATE;
-// 		return result;
-// 	}
-//
-// 	//	print_list_manager
-// 	WRITE_TO_DUMP_FILE("{rank = min;\n"
-//     	"\tlist_manager [shape = Mrecord, fillcolor = \"#1E90FF\", "
-// 		"label = \"{ROOT: %d| CUR_FREE: %d | CAPACITY: %lu}\"];\n"
-// 	"}\n", btr->root, btr->current_free, btr->capacity);
-//
-// 	if(btr->root >= 0)
-// 	{
-// 		print_regular_nodes(btr->root, btr->node,
-// 							&nd_description, result.graphic_dump_code_file_ptr);
-// 	}
-//
-// 	connect_nodes(btr->root, btr->node, result.graphic_dump_code_file_ptr);
-//
-// 	WRITE_TO_DUMP_FILE("}");
-//
-// 	#undef WRITE_TO_DUMP_FILE
-//
-// 	free(nd_description.label);
-// 	fclose(result.graphic_dump_code_file_ptr);
-//
-// 	return result;
-// }
+
+struct Generate_code_for_graphic_dump_result generate_code_for_graphic_dump(struct B_tree *btr)
+{
+	struct Generate_code_for_graphic_dump_result result =
+	{
+		.error_code = ALL_GOOD,
+		.graphic_dump_code_file_ptr = fopen("b_tree_graphic_dump.dot", "w"),
+	};
+
+	if(result.graphic_dump_code_file_ptr == NULL)
+	{
+		fprintf(stderr, "Unable to open list_graphic_dump.dot\n");
+
+		result.error_code = UNABLE_TO_OPEN_FILE;
+		return result;
+	}
+
+	#define WRITE_TO_DUMP_FILE(...) fprintf(result.graphic_dump_code_file_ptr, __VA_ARGS__);
+
+	WRITE_TO_DUMP_FILE("digraph BinaryTree {\n"
+	"bgcolor = \"#BAF0EC\";\n"
+	"edge[minlen = 3, penwidth = 3; color = \"black\"];\n"
+	"node[shape = \"rectangle\", style = \"rounded, filled\",\n"
+	"\tfillcolor = \"#F08080\",\n"
+	"\tfontsize = 30,\n"
+	"\theight = 3,\n"
+	"\tpenwidth = 5, color = \"#F0E68C\"];\n");
+
+	struct node_charachteristics nd_description =
+	{
+		.color = "#F08080",
+		.name = "node_",
+	};
+
+	nd_description.label = (char *)calloc((NODE_LABEL_STR_SIZE), sizeof(char));
+	if(nd_description.label == NULL)
+	{
+		fprintf(stderr, "Unable to allocate nd_description.label\n");
+		result.error_code = UNABLE_TO_ALLOCATE;
+		return result;
+	}
+
+	//	print_list_manager
+	WRITE_TO_DUMP_FILE("{rank = min;\n"
+    	"\tlist_manager [shape = Mrecord, fillcolor = \"#FFF825\", "
+		"label = \"{ROOT: %p| CUR_FREE: %p | CAPACITY: %lu}\"];\n"
+	"}\n", btr->root, btr->current_free, btr->capacity);
+
+	if(btr->root != NULL)
+	{
+		print_regular_nodes(btr->root, &nd_description, result.graphic_dump_code_file_ptr);
+	}
+
+	connect_nodes(btr->root, result.graphic_dump_code_file_ptr);
+
+	WRITE_TO_DUMP_FILE("}");
+
+	#undef WRITE_TO_DUMP_FILE
+
+	free(nd_description.label);
+	fclose(result.graphic_dump_code_file_ptr);
+
+	return result;
+}
 
 error_t b_tree_dump(const struct B_tree *btr, error_t error_code, const char *func_name)
 {
@@ -259,15 +242,17 @@ struct Construct_b_tree_result construct_b_tree(FILE *data_base)
 
 	size_t amount_of_nodes = get_amount_of_nodes(data_base_lexemes.buf, amount_of_lexems);
 
-	result.btr = b_tree_ctor(amount_of_nodes).new_btr;
+
+
+	result.btr = b_tree_ctor(amount_of_nodes + SPACE_FOR_NEW_NODES).new_btr;
 
 	int current_node_ID = 0;
 	result.btr->root = &(result.btr->node[current_node_ID]);
-	result.btr->capacity = amount_of_nodes;
+	result.btr->capacity = amount_of_nodes + SPACE_FOR_NEW_NODES;
 	read_node(&data_base_lexemes, &(current_node_ID), result.btr->node);
 
 	printf("currnet_ID: %d\n", current_node_ID);
-	result.btr->current_free = result.btr->node[current_node_ID].right;
+	result.btr->current_free = &(result.btr->node[current_node_ID + 1]);
 
 	free(data_base_lexemes.buf);
 	free(data_base_buf_w_info.buf);
@@ -363,7 +348,7 @@ struct Create_node_result create_node(struct B_tree *btr, const b_tree_elem_t va
 		b_tree_dump(btr, result.error_code, __func__);
 	}
 
-    if (btr->current_free == NULL)
+    if (btr->current_free == FREE_NODE)
     {
 		btr->capacity *= REALLOC_COEFF;
 		printf("New capacity: %lu\n", btr->capacity);
@@ -390,21 +375,22 @@ struct Create_node_result create_node(struct B_tree *btr, const b_tree_elem_t va
     return result;
 }
 
-error_t add_child(struct B_tree_node *parent, struct B_tree_node *child, bool is_left_child)
+error_t add_child(struct B_tree_node *parent, struct B_tree_node *child, bool is_right_child)
 {
 	if(parent == NULL || child == NULL)
 	{
 		return B_TREE_NODE_NULL_PTR;
 	}
 
-	if(is_left_child)
+	if(is_right_child)
 	{
-		printf("parent: %p\n", parent);
-		parent->left = child;
+		printf("%s's right child is now %s\n", parent->data, child->data);
+		parent->right = child;
 	}
 	else
 	{
-		parent->right = child;
+		printf("%s's left child is now %s\n", parent->data, child->data);
+		parent->left = child;
 	}
 
 	return ALL_GOOD;
@@ -424,121 +410,223 @@ error_t set_root(struct B_tree *btr, int root_ID)
 
 error_t play_akinator(const char *data_base_file_name)
 {
-	char player_answer = 'n';
-
-	printf("Hi!1 U wanna play akinator??\n(enter 'y' if you do)");
-
-	scanf("%c", &player_answer);
-	clear_buffer();
-
-	if(player_answer != 'y')
+	while(true)
 	{
-		printf("Ok bye then\n");
-		return ALL_GOOD;
-	}
+		char player_answer = 'q';
+
+		//preapare_btr
+			FILE *data_base = fopen(data_base_file_name, "r");
+			if (data_base == NULL)
+			{
+				fprintf(stderr, "I cant open ur data base(%s)!\n", data_base_file_name);
+				return UNABLE_TO_OPEN_FILE;
+			}
+
+			struct Construct_b_tree_result ctor_result = construct_b_tree(data_base);
+
+			fclose(data_base);
+
+			if(ctor_result.error_code != ALL_GOOD)
+			{
+				b_tree_dump(ctor_result.btr, ctor_result.error_code, __func__);
+
+				return ctor_result.error_code;
+			}
+
+			struct B_tree *btr = ctor_result.btr;
+
+			struct B_tree_node finctitious_root_parent =
+			{
+				.data = "dont_look_at_me",
+				.left = btr->root,
+				.right = btr->root,
+			};
+		//
 
 
-	FILE *data_base = fopen(data_base_file_name, "r");
-	if (data_base == NULL)
-	{
-		fprintf(stderr, "I cant open ur data base(%s)!\n", data_base_file_name);
-		return UNABLE_TO_OPEN_FILE;
-	}
-	Construct_b_tree_result ctor_result = construct_b_tree(data_base);
-	fclose(data_base);
+		printf("\t\tAKINATOR MENU\n");
+		printf("\t[s] - to start the game\n");
+		printf("\t[b] - to show data base\n");
+		printf("\t[d] - to describe a certain leaf\n");
+		printf("\t[c] - to comapre leafs\n");
+		printf("\t[q] - to quit\n");
 
-	if(ctor_result.error_code != ALL_GOOD)
-	{
-		b_tree_dump(ctor_result.btr, ctor_result.error_code, __func__);
+		player_answer = get_answer();
 
-		return ctor_result.error_code;
-	}
-
-	struct B_tree *btr = ctor_result.btr;
-
-
-	printf("Nice! I will ask questions and you will answer 'y' if yes "
-		   "or anything else if no.\n");
-
-	struct B_tree_node finctitious_root_parent =
-	{
-		.data = "dont_look_at_me",
-		.left = btr->root,
-		.right = btr->root,
-	};
-
-	struct Ask_question_result ask_result = ask_question(&finctitious_root_parent, true);
-
-	struct B_tree_node *parent_of_final_guess = ask_result.parent;
-
-	struct B_tree_node *final_guess = NULL;
-	if(ask_result.is_right_child)
-	{
-		final_guess = ask_result.parent->right;
-	}
-	else
-	{
-		final_guess = ask_result.parent->left;
-	}
-
-	printf("Is your guess %s?\n", final_guess->data);
-
-	scanf("%c", &player_answer);
-
-	clear_buffer();
-
-	if(player_answer == 'y')
-	{
-		printf("Too slow, too weak, too easy\n");
-
-		return ALL_GOOD;
-	}
-	else
-	{
-		char new_leaf_data[MAX_NEW_NODE_DATA_STRLEN] = {};
-		char new_question[MAX_NEW_NODE_DATA_STRLEN]  = {};
-
-		printf("damn... what was it then?\n");
-
-		scanf("%[^\t\n]", new_leaf_data);
-		clear_buffer();
-		printf("new leaf: %s\n", new_leaf_data);
-
-		printf("And how does he differ from %s?\n", final_guess->data);
-
-		scanf("%[^\t\n]", new_question);
-		clear_buffer();
-		printf("new question: %s\n", new_question);
-
-		b_tree_dump(btr, ALL_GOOD, __func__);
-
-		printf("U wanna add new leaf to data base?\n");
-		printf("new question: %s\n", new_question);
-		printf("new leaf: %s\n", new_leaf_data);
-		b_tree_dump(btr, ALL_GOOD, __func__);
-		scanf("%c", &player_answer);
-		clear_buffer();
-
-		if(player_answer == 'y')
+		switch(player_answer)
 		{
-			struct B_tree_node *new_leaf = create_node(btr, new_leaf_data).created_node;
-			struct B_tree_node *new_question_node = create_node(btr, new_question).created_node;
+			case 'q':
+			{
+				return ALL_GOOD;
 
-			printf("final_guess: %s\n", final_guess->data);
+				break;
+			}
+			case 's':
+			{
+				printf("You already guessed someone? "
+					   "Answer the following questions and I'll tell you who it is!\n");
 
-			add_child(new_question_node, final_guess, true);
-			add_child(new_question_node, new_leaf, false);
-			// add_child(ask_result.parent, new_question_node, true);
+				struct Ask_question_result ask_result =
+					ask_question(&finctitious_root_parent, true);
 
-			// create_data_base(btr, "data_base.txt");
+				struct B_tree_node *final_guess = NULL;
+				if(ask_result.is_right_child)
+				{
 
-			b_tree_dump(btr, ALL_GOOD, __func__);
+					final_guess = ask_result.parent->right;
+				}
+				else
+				{
+					final_guess = ask_result.parent->left;
+				}
 
-			printf("New leaf has been added to the tree");
+				printf("Is your guess %s?\n", final_guess->data);
+
+				player_answer = get_answer();
+
+				if(player_answer == 'y')
+				{
+					printf("Too slow, too weak, too easy\n");
+					printf("[m] - to go to the main menu\n");
+					printf("[q] - to quit\n");
+
+
+					player_answer = get_answer();
+
+					switch(player_answer)
+					{
+						case 'm':
+						{
+							break;
+						}
+						case 'q':
+						{
+							return ALL_GOOD;
+							break;
+						}
+						default:
+						{
+							printf("Unknown menu option![%c] "
+					   		"But im going to the main menu anyways lol.\n", player_answer);
+							break;
+						}
+					}
+				}
+				else
+				{
+					char new_leaf_data[MAX_NEW_NODE_DATA_STRLEN] = {};
+					char new_question[MAX_NEW_NODE_DATA_STRLEN]  = {};
+
+					printf("damn... what was it then?> \n");
+
+					scanf("%[^\t\n]", new_leaf_data);
+					clear_buffer();
+
+					printf("new leaf: %s\n", new_leaf_data);
+
+					printf("And how does he differ from %s?> \n", final_guess->data);
+
+					scanf("%[^\t\n]", new_question);
+					clear_buffer();
+
+					printf("new question: %s\n", new_question);
+
+					b_tree_dump(btr, ALL_GOOD, __func__);
+
+					printf("U wanna add new leaf to data base?\n");
+					printf("new question: %s\n", new_question);
+					printf("new leaf: %s\n> ", new_leaf_data);
+
+					b_tree_dump(btr, ALL_GOOD, __func__);
+
+					scanf("%c", &player_answer);
+					clear_buffer();
+
+					if(player_answer == 'y')
+					{
+						struct B_tree_node *new_leaf =
+							create_node(btr, new_leaf_data).created_node;
+						struct B_tree_node *new_question_node =
+							create_node(btr, new_question).created_node;
+
+						printf("final_guess: %s\n", final_guess->data);
+
+						add_child(new_question_node, final_guess, false);
+						add_child(new_question_node, new_leaf, true);
+						if(ask_result.is_right_child)
+						{
+							add_child(ask_result.parent, new_question_node, true);
+						}
+						else
+						{
+							add_child(ask_result.parent, new_question_node, false);
+						}
+						create_data_base(btr, "data_base.txt");
+
+						b_tree_dump(btr, ALL_GOOD, __func__);
+
+						printf("New leaf has been added to the tree\n");
+					}
+				}
+
+				break;
+			}
+			case 'b':
+			{
+				printf("Generating data base...\n");
+				system("rm b_tree_graphic_dump.dot");
+				generate_code_for_graphic_dump(btr);
+				system("b_tree_graphic_dump.png");
+				system("dot -Tpng b_tree_graphic_dump.dot -o b_tree_graphic_dump.png -Gdpi=100");
+				break;
+			}
+			case 'd':
+			{
+				printf("I can't describe leafs yet. Sorry =(\n");
+				break;
+			}
+			case 'c':
+			{
+				printf("I can't compare leafs yet. Sorry =(\n");
+				break;
+			}
+			default:
+			{
+				printf("Unknown menu option![%c] "
+					   "Please chose from options given in square brackets.\n", player_answer);
+				break;
+			}
 		}
+	}
+	//dead_zone
+	exit(EXIT_FAILURE);
+}
 
+struct B_tree_node *search_for_node(struct B_tree_node *node, const char *data)
+{
+	if(node == NULL)
+	{
+		return NULL;
 	}
 
+	if(!strncmp(node->data, data, strlen(data)))
+	{
+		return node;
+	}
 
-	return ALL_GOOD;
+	struct B_tree_node *found_node = NULL;
+
+	found_node = search_for_node(node->left,  data);
+	if(found_node != NULL)
+	{
+		return found_node;
+	}
+
+	found_node = search_for_node(node->right, data);
+	if(found_node != NULL)
+	{
+		return found_node;
+	}
+
+	return NULL;
 }

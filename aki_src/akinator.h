@@ -23,9 +23,22 @@ enum Err_ID
 	PARENT_NODE_IS_FREE      = 1 << 8,
 };
 
-typedef enum Err_ID error_t;
+typedef Err_ID error_t;
 
-struct B_tree;
+struct B_tree_node
+{
+	b_tree_elem_t data;
+	struct B_tree_node *left;
+	struct B_tree_node *right;
+};
+
+struct B_tree
+{
+	struct B_tree_node *node;
+	struct B_tree_node *root;
+	size_t capacity;
+	struct B_tree_node *current_free;
+};
 
 struct Generate_code_for_graphic_dump_result
 {
@@ -76,12 +89,13 @@ const size_t REALLOC_COEFF            = 2;
 const int INDEX_POISON  			  = -666;
 const b_tree_elem_t DATA_POISON       = NULL;
 const size_t DEFAULT_STARTER_CAPACITY = 10;
-const size_t FREE_NODE    			  = NULL;
+void * const FREE_NODE   			  = NULL;
 const size_t PTR_POISON               = NULL;
 const size_t MAX_NEW_NODE_DATA_STRLEN = 100;
+const size_t SPACE_FOR_NEW_NODES      = 3;
 
 struct  B_tree_ctor_result b_tree_ctor(size_t starter_capacity);
-// struct  Generate_code_for_graphic_dump_result generate_code_for_graphic_dump(struct B_tree *btr);
+struct Generate_code_for_graphic_dump_result generate_code_for_graphic_dump(struct B_tree *btr);
 struct  B_tree_insert_result b_tree_insert(struct B_tree *btr, b_tree_elem_t value);
 error_t b_tree_dump(const struct B_tree *btr, error_t error_code, const char *func_name);
 struct  Construct_b_tree_result construct_b_tree(FILE *data_base);
@@ -90,10 +104,11 @@ struct Create_data_base_result create_data_base(struct B_tree *btr, const char *
 error_t b_tree_verifier(struct B_tree *btr);
 error_t destroy_subtree(struct B_tree *btr, int parent_index, bool is_left_child);
 struct Create_node_result create_node(struct B_tree *btr, const b_tree_elem_t value);
-error_t add_child(struct B_tree_node *parent, struct B_tree_node *child, bool is_left_child);
+error_t add_child(struct B_tree_node *parent, struct B_tree_node *child, bool is_right_child);
 error_t set_root(struct B_tree *btr, int root_ID);
 
 error_t play_akinator(const char *data_base_file_name);
+struct B_tree_node *search_for_node(struct B_tree_node *node, const char *data);
 
 
 #endif
