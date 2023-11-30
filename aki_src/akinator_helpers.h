@@ -27,6 +27,10 @@ error_t assign_value(b_tree_elem_t *data, const b_tree_elem_t assigned_value);
 struct Ask_question_result ask_question(struct B_tree_node *parent, bool is_right_child);
 void clear_buffer(void);
 size_t get_amount_of_nodes(char * *lexemes, size_t amount_of_lexemes);
-char get_answer(void);
+char get_menu_option_answer(void);
+error_t update_current_node_according_to_path(int current_turn, struct B_tree_node *current_node);
+size_t min_size_t(size_t num_1, size_t num_2);
+struct B_tree_node *get_final_guess(struct Ask_question_result *ask_result);
+void get_string(char *answer);
 
 #endif

@@ -15,7 +15,7 @@ struct node_charachteristics
 
 error_t mark_b_tree_nodes_as_free(struct B_tree_node *node, size_t size, size_t start_ID)
 {
-	error_t error_code = ALL_GOOD;
+	error_t error_code = AKI_ALL_GOOD;
 
 	node[start_ID].left = NULL;
 
@@ -41,7 +41,7 @@ error_t dump_node(struct B_tree_node *node, struct node_charachteristics *nd_des
 		"fillcolor = \"%s\", label = \"%s\" ];\n",
 			node, nd_description->color, nd_description->label);
 
-	return ALL_GOOD;
+	return AKI_ALL_GOOD;
 }
 
 void print_regular_nodes(struct B_tree_node *node,
@@ -95,7 +95,7 @@ void connect_nodes(struct B_tree_node *node, FILE *graphic_dump_code_file_ptr)
 
 error_t b_tree_realloc(struct B_tree *btr)
 {
-	error_t error_code = ALL_GOOD;
+	error_t error_code = AKI_ALL_GOOD;
 
 	size_t data_size = sizeof(struct B_tree_node) * btr->capacity;
 
@@ -299,7 +299,7 @@ error_t assign_value(b_tree_elem_t *data, const b_tree_elem_t assigned_value)
 
 	strncpy(*(data), assigned_value, strlen(assigned_value));
 
-	return ALL_GOOD;
+	return AKI_ALL_GOOD;
 }
 
 struct Ask_question_result ask_question(struct B_tree_node *parent, bool is_right_child)
@@ -372,7 +372,7 @@ size_t get_amount_of_nodes(char * *lexemes, size_t amount_of_lexemes)
 	return node_counter;
 }
 
-char get_answer(void)
+char get_menu_option_answer(void)
 {
 	char answer = 'x';
 	printf("> ");
@@ -380,4 +380,57 @@ char get_answer(void)
 	clear_buffer();
 
 	return answer;
+}
+
+error_t update_current_node_according_to_path(int current_turn, struct B_tree_node *current_node)
+{
+	if(current_turn == 0)
+	{
+		current_node = current_node->left;
+	}
+	else if(current_turn == 1)
+	{
+		current_node = current_node->right;
+	}
+	else
+	{
+		return INVALID_NODE_PATH_TURN;
+	}
+
+	return AKI_ALL_GOOD;
+}
+
+size_t min_size_t(size_t num_1, size_t num_2)
+{
+	if(num_1 >= num_2)
+	{
+		return num_1;
+	}
+	else
+	{
+		return num_2;
+	}
+}
+
+struct B_tree_node *get_final_guess(struct Ask_question_result *ask_result)
+{
+	struct B_tree_node *final_guess = NULL;
+	if(ask_result->is_right_child)
+	{
+
+		final_guess = ask_result->parent->right;
+	}
+	else
+	{
+		final_guess = ask_result->parent->left;
+	}
+
+	return final_guess;
+}
+
+void get_string(char *answer)
+{
+	printf("> ");
+	scanf("%s", answer);
+	clear_buffer();
 }
