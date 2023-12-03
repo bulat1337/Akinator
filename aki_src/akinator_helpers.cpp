@@ -304,6 +304,7 @@ error_t assign_value(b_tree_elem_t *data, const b_tree_elem_t assigned_value)
 
 struct Ask_question_result ask_question(struct B_tree_node *parent, bool is_right_child)
 {
+	char line_to_say[AKINATOR_LINE_MAX_LEN] = {};
 	struct Ask_question_result result =
 	{
 		.parent = parent,
@@ -329,11 +330,9 @@ struct Ask_question_result ask_question(struct B_tree_node *parent, bool is_righ
 
 	char player_answer = 'n';
 
-	printf("%s?\n> ", current_node->data);
+	SAY_TO_PLAYER("%s?", current_node->data);
 
-	scanf("%c", &player_answer);
-
-	clear_buffer();
+	player_answer = get_menu_option_answer();
 
 	parent = current_node;
 
@@ -434,3 +433,5 @@ void get_string(char *answer)
 	scanf("%s", answer);
 	clear_buffer();
 }
+
+

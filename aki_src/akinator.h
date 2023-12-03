@@ -8,6 +8,12 @@
 
 #define WRITE_IN_LOG_FILE(...) fprintf(log_file, __VA_ARGS__);
 
+#define SAY_TO_PLAYER(...)\
+		printf(__VA_ARGS__);\
+		printf("\n");\
+		snprintf(line_to_say, 100, "say -vReed " __VA_ARGS__);\
+		system(line_to_say);
+
 typedef char *b_tree_elem_t;
 
 enum Aki_err_ID
@@ -100,6 +106,7 @@ void * const FREE_NODE   			  = NULL;
 const size_t PTR_POISON               = NULL;
 const size_t MAX_NEW_NODE_DATA_STRLEN = 100;
 const size_t SPACE_FOR_NEW_NODES      = 3;
+const size_t AKINATOR_LINE_MAX_LEN    = 100;
 
 struct  B_tree_ctor_result b_tree_ctor(size_t starter_capacity);
 struct Generate_code_for_graphic_dump_result generate_code_for_graphic_dump(struct B_tree *btr);

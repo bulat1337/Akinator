@@ -434,6 +434,7 @@ error_t play_akinator(const char *data_base_file_name)
 			}																		\
 			case 'q':																\
 			{																		\
+				SAY_TO_PLAYER("Okay bye then...");									\
 				return AKI_ALL_GOOD;												\
 				break;																\
 			}																		\
@@ -448,6 +449,7 @@ error_t play_akinator(const char *data_base_file_name)
 	while(true)
 	{
 		char player_answer = 'q';
+		char line_to_say[AKINATOR_LINE_MAX_LEN] = {};
 
 		struct Construct_b_tree_result ctor_result = construct_b_tree("data_base.txt");
 
@@ -459,7 +461,6 @@ error_t play_akinator(const char *data_base_file_name)
 		}
 
 		struct B_tree *btr = ctor_result.btr;
-
 		printf("\t\tAKINATOR MENU\n");
 		printf("\t[s] - to start the game\n");
 		printf("\t[b] - to show data base\n");
@@ -473,14 +474,14 @@ error_t play_akinator(const char *data_base_file_name)
 		{
 			case 'q':
 			{
+				SAY_TO_PLAYER("Okay bye then...");
 				return AKI_ALL_GOOD;
 				break;
 			}
 			case 's':
 			{
-				printf("You already guessed someone? "
-					   "Answer the following questions and I'll tell you who it is!\n");
-
+				SAY_TO_PLAYER("You already guessed someone?");
+				SAY_TO_PLAYER("Answer the following questions and I will tell you who it is.");
 
 				struct B_tree_node finctitious_root_parent =
 				{
@@ -494,13 +495,13 @@ error_t play_akinator(const char *data_base_file_name)
 
 
 				struct B_tree_node *final_guess = get_final_guess(&ask_result);
-				printf("Is your guess %s?\n", final_guess->data);
+				SAY_TO_PLAYER("Is your guess %s?", final_guess->data);
 
 				player_answer = get_menu_option_answer();
 
 				if(player_answer == 'y')
 				{
-					printf("Too slow, too weak, too easy\n");
+					SAY_TO_PLAYER("Too slow, too weak, too easy");
 
 					AFTER_TASK_CHOISE;
 				}
@@ -509,15 +510,16 @@ error_t play_akinator(const char *data_base_file_name)
 					char new_leaf_data[MAX_NEW_NODE_DATA_STRLEN] = {};
 					char new_question[MAX_NEW_NODE_DATA_STRLEN]  = {};
 
-					printf("damn... what or who was it then?\n");
+					SAY_TO_PLAYER("damn... what or who was it then?");
 
 					get_string(new_leaf_data);
 
-					printf("And how does he differ from %s?\n", final_guess->data);
+					SAY_TO_PLAYER("And how does he differ from %s?", final_guess->data);
 
 					get_string(new_question);
 
-					printf("U wanna add new leaf with the corresponding question to data base?\n");
+					SAY_TO_PLAYER("U wanna add new leaf "
+								  "with the corresponding question to the data base?");
 					printf("New leaf: %s\n", new_leaf_data);
 					printf("New question: %s\n", new_question);
 
@@ -543,7 +545,7 @@ error_t play_akinator(const char *data_base_file_name)
 
 						create_data_base(btr, "data_base.txt");
 
-						printf("New leaf has been added to the tree\n");
+						SAY_TO_PLAYER("New leaf has been added to the tree");
 					}
 				}
 
@@ -551,7 +553,7 @@ error_t play_akinator(const char *data_base_file_name)
 			}
 			case 'b':
 			{
-				printf("Generating data base...\n");
+				SAY_TO_PLAYER("Generating data base...");
 				system("rm b_tree_graphic_dump.dot");
 				system("rm b_tree_graphic_dump.png");
 				generate_code_for_graphic_dump(btr);
@@ -565,7 +567,7 @@ error_t play_akinator(const char *data_base_file_name)
 			{
 				char desired_data[MAX_NEW_NODE_DATA_STRLEN] = {};
 
-				printf("Who you wanna describe?\n");
+				SAY_TO_PLAYER("Who you wanna describe?");
 
 				get_string(desired_data);
 
@@ -584,7 +586,7 @@ error_t play_akinator(const char *data_base_file_name)
 						current_turn = node_path.data[ID];
 						if(current_turn == 0)
 						{
-							printf("NOT ");
+							SAY_TO_PLAYER("NOT ");
 						}
 						else if(current_turn == 1)
 						{
@@ -595,7 +597,7 @@ error_t play_akinator(const char *data_base_file_name)
 							return INVALID_NODE_PATH_TURN;
 						}
 
-						printf("%s\n", current_node->data);
+						SAY_TO_PLAYER("%s", current_node->data);
 
 						if(current_turn == 0)
 						{
@@ -614,7 +616,7 @@ error_t play_akinator(const char *data_base_file_name)
 				}
 				else
 				{
-					printf("There is no such leaf as %s.\n", desired_data);
+					SAY_TO_PLAYER("There is no such leaf as %s.\n", desired_data);
 				}
 
 				AFTER_TASK_CHOISE;
@@ -623,7 +625,7 @@ error_t play_akinator(const char *data_base_file_name)
 			}
 			case 'c':
 			{
-				printf("Who you wanna compare?\n");
+				SAY_TO_PLAYER("Who you wanna compare?");
 
 
 				char compared_leaf_1[MAX_NEW_NODE_DATA_STRLEN] = {};
@@ -639,8 +641,8 @@ error_t play_akinator(const char *data_base_file_name)
 
 				if(found_node_1 == NULL)
 				{
-					printf("There is no such leaf as %s.\n", compared_leaf_1);
-					break;
+					SAY_TO_PLAYER("There is no such leaf as %s.", compared_leaf_1);
+					AFTER_TASK_CHOISE;
 				}
 
 				char compared_leaf_2[MAX_NEW_NODE_DATA_STRLEN] = {};
@@ -657,19 +659,20 @@ error_t play_akinator(const char *data_base_file_name)
 
 				if(found_node_2 == NULL)
 				{
-					printf("There is no such leaf as %s.\n", compared_leaf_2);
-					break;
+					SAY_TO_PLAYER("There is no such leaf as %s.", compared_leaf_2);
+					AFTER_TASK_CHOISE;
 				}
 
 				//Similarities
 				size_t stack_ID = 0;
 				struct B_tree_node *current_node = btr->root;
+
+				SAY_TO_PLAYER("Similarities:");
 				while(node_path_1.data[stack_ID] == node_path_2.data[stack_ID])
 				{
-					printf("Similatities:\n");
 					if(node_path_1.data[stack_ID] == 0)
 					{
-						printf("NOT ");
+						SAY_TO_PLAYER("NOT ");
 					}
 					else if(node_path_1.data[stack_ID] == 1)
 					{
@@ -677,11 +680,11 @@ error_t play_akinator(const char *data_base_file_name)
 					}
 					else
 					{
-						printf("Invalid stack value: %d\n", node_path_1.data[stack_ID]);
+						SAY_TO_PLAYER("Invalid stack value: %d", node_path_1.data[stack_ID]);
 						return INVALID_NODE_PATH_TURN;
 					}
 
-					printf("%s\n", current_node->data);
+					SAY_TO_PLAYER("%s", current_node->data);
 
 
 					if(node_path_1.data[stack_ID] == 0)
@@ -694,7 +697,7 @@ error_t play_akinator(const char *data_base_file_name)
 					}
 					else
 					{
-						printf("Invalid stack value: %d\n", node_path_1.data[stack_ID]);
+						SAY_TO_PLAYER("Invalid stack value: %d", node_path_1.data[stack_ID]);
 						return INVALID_NODE_PATH_TURN;
 					}
 
@@ -705,18 +708,18 @@ error_t play_akinator(const char *data_base_file_name)
 				//Difference
 				struct B_tree_node *current_node_1 = current_node;
 				struct B_tree_node *current_node_2 = current_node;
-				printf("Difference:\n");
+				SAY_TO_PLAYER("Difference:");
 
 				if(node_path_1.data[stack_ID] > node_path_2.data[stack_ID])
 				{
-					printf("%s is %s but %s is not\n",
+					SAY_TO_PLAYER("%s is %s but %s is not",
 						compared_leaf_1, current_node->data, compared_leaf_2);
 					current_node_1 = current_node_1->right;
 					current_node_2 = current_node_2->left;
 				}
 				else
 				{
-					printf("%s is %s but %s is not\n",
+					SAY_TO_PLAYER("%s is %s but %s is not",
 						compared_leaf_2, current_node->data, compared_leaf_1);
 					current_node_1 = current_node_1->left;
 					current_node_2 = current_node_2->right;
@@ -730,13 +733,13 @@ error_t play_akinator(const char *data_base_file_name)
 
 				if(stack_ID_1 < node_path_1.size)
 				{
-					printf("In addition %s is:\n", compared_leaf_1);
+					SAY_TO_PLAYER("In addition %s is:", compared_leaf_1);
 				}
 				while(stack_ID_1 < node_path_1.size)
 				{
 					if(node_path_1.data[stack_ID_1] == 0)
 					{
-						printf("NOT ");
+						SAY_TO_PLAYER("NOT ");
 					}
 					else if(node_path_1.data[stack_ID_1] == 1)
 					{
@@ -744,11 +747,11 @@ error_t play_akinator(const char *data_base_file_name)
 					}
 					else
 					{
-						printf("Invalid stack value: %d\n", node_path_1.data[stack_ID_1]);
+						SAY_TO_PLAYER("Invalid stack value: %d", node_path_1.data[stack_ID_1]);
 						return INVALID_NODE_PATH_TURN;
 					}
 
-					printf("%s\n", current_node_1->data);
+					SAY_TO_PLAYER("%s", current_node_1->data);
 
 					if(node_path_1.data[stack_ID_1] == 0)
 					{
@@ -771,7 +774,7 @@ error_t play_akinator(const char *data_base_file_name)
 			}
 			default:
 			{
-				printf("Unknown menu option![%c] "
+				SAY_TO_PLAYER("Unknown menu option![%c] "
 					   "Please chose from options given in square brackets.\n", player_answer);
 				break;
 			}

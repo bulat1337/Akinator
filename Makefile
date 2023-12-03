@@ -21,7 +21,7 @@ FLAGS = -D _DEBUG -ggdb3 \
 LINK_FLAGS = -fsanitize=address,alignment,bool,bounds,enum,float-cast-overflow,float-divide-by-zero,integer-divide-by-zero,nonnull-attribute,null,return,returns-nonnull-attribute,shift,signed-integer-overflow,undefined,unreachable,vla-bound,vptr
 
 $(TARGET_1): $(PREF_AKI_OBJ)main.o $(PREF_AKI_OBJ)akinator.o $(PREF_AKI_OBJ)akinator_helpers.o $(PREF_BUF_OBJ)buffer_process.o
-	@ $(CC) $(LINK_FLAGS) $(PREF_AKI_OBJ)main.o $(PREF_AKI_OBJ)akinator.o $(PREF_AKI_OBJ)akinator_helpers.o $(PREF_BUF_OBJ)buffer_process.o -o $(TARGET_1)
+	@ $(CC) $(LINK_FLAGS) $(PREF_AKI_OBJ)main.o $(PREF_AKI_OBJ)akinator.o $(PREF_AKI_OBJ)akinator_helpers.o $(PREF_BUF_OBJ)buffer_process.o -o $(TARGET_1) -L./lib -lstack -I./lib
 
 $(PREF_AKI_OBJ)main.o: $(PREF_AKI_SRC)main.cpp
 	@ $(CC) -c $(PREF_AKI_SRC)main.cpp -o $(PREF_AKI_OBJ)main.o $(FLAGS)
