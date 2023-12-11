@@ -4,6 +4,11 @@
 
 #include "akinator_helpers.h"
 
+#define NODE_PATH_ID current_pos->node_path_ID
+#define FIRST_TURN cmp_leafs[FIRST].node_path.data[NODE_PATH_ID]
+#define SECOND_TURN cmp_leafs[SECOND].node_path.data[NODE_PATH_ID]
+#define CURRENT_NODE current_pos->current_node
+
 extern FILE *log_file;
 
 struct node_charachteristics
@@ -302,10 +307,10 @@ error_t assign_value(b_tree_elem_t *data, const b_tree_elem_t assigned_value)
 	return AKI_ALL_GOOD;
 }
 
-struct Ask_question_result ask_question(struct B_tree_node *parent, bool is_right_child)
+struct Guess_result ask_question(struct B_tree_node *parent, bool is_right_child)
 {
-	char line_to_say[AKINATOR_LINE_MAX_LEN] = {};
-	struct Ask_question_result result =
+	char line_to_say[AKINATOR_LINE_MAX_LEN] = {}; //static
+	struct Guess_result result =
 	{
 		.parent = parent,
 		.is_right_child = is_right_child,
@@ -345,7 +350,7 @@ struct Ask_question_result ask_question(struct B_tree_node *parent, bool is_righ
 		is_right_child = false;
 	}
 
-	struct Ask_question_result final_answer = ask_question(parent, is_right_child);
+	struct Guess_result final_answer = ask_question(parent, is_right_child);
 
 	return final_answer;
 }
@@ -371,9 +376,9 @@ size_t get_amount_of_nodes(char * *lexemes, size_t amount_of_lexemes)
 	return node_counter;
 }
 
-char get_menu_option_answer(void)
+enum Menu_option get_menu_option_answer(void)
 {
-	char answer = 'x';
+	enum Menu_option answer = QUIT;
 	printf("> ");
 	scanf("%c", &answer);
 	clear_buffer();
@@ -381,7 +386,8 @@ char get_menu_option_answer(void)
 	return answer;
 }
 
-error_t update_current_node_according_to_path(int current_turn, struct B_tree_node *current_node)
+error_t update_current_node_according_to_path(int current_turn,
+											  struct B_tree_node *current_node)
 {
 	if(current_turn == 0)
 	{
@@ -411,7 +417,7 @@ size_t min_size_t(size_t num_1, size_t num_2)
 	}
 }
 
-struct B_tree_node *get_final_guess(struct Ask_question_result *ask_result)
+struct B_tree_node *get_final_guess(const struct Guess_result *ask_result)
 {
 	struct B_tree_node *final_guess = NULL;
 	if(ask_result->is_right_child)
@@ -434,4 +440,216 @@ void get_string(char *answer)
 	clear_buffer();
 }
 
+struct Guess_result guess_leaf(struct B_tree *btr)
+{
+	SAY_TO_PLAYER("You already guessed someone?");
+	SAY_TO_PLAYER("Answer the following questions and I will tell you who it is.");
 
+	struct B_tree_node finctitious_root_parent =
+	{
+		.data = "dont_look_at_me",
+		.left = btr->root,
+		.right = btr->root,
+	};
+
+	return ask_question(&finctitious_root_parent, RIGHT_CHILD);
+}
+
+void process_guess_validation(char player_answer,
+							  const struct Guess_result *guess_result,
+							  struct B_tree *btr)
+{
+	if(player_answer == 'y')
+	{
+		SAY_TO_PLAYER("Too slow, too weak, too easy");
+	}
+	else
+	{
+		char new_leaf_data[MAX_NEW_NODE_DATA_STRLEN] = {};
+		char new_question[MAX_NEW_NODE_DATA_STRLEN]  = {};
+
+		SAY_TO_PLAYER("damn... what or who was it then?");
+
+		get_string(new_leaf_data);
+
+		struct B_tree_node *final_guess = get_final_guess(guess_result);
+
+		SAY_TO_PLAYER("And how does he differ from %s?", final_guess->data);
+
+		get_string(new_question);
+
+		SAY_TO_PLAYER("U wanna add new leaf "
+						"with the corresponding question to the data base?");
+		printf("New leaf: %s\n", new_leaf_data);
+		printf("New question: %s\n", new_question);
+
+		player_answer = get_menu_option_answer();
+
+		if(player_answer == 'y')
+		{
+			struct B_tree_node *new_leaf =
+				create_node(btr, new_leaf_data).created_node;
+			struct B_tree_node *new_question_node =
+				create_node(btr, new_question).created_node;
+
+			add_child(new_question_node, final_guess, LEFT_CHILD);
+			add_child(new_question_node, new_leaf, RIGHT_CHILD);
+			if(guess_result->is_right_child)
+			{
+				add_child(guess_result->parent, new_question_node, RIGHT_CHILD);
+			}
+			else
+			{
+				add_child(guess_result->parent, new_question_node, LEFT_CHILD);
+			}
+
+			create_data_base(btr, "data_base.txt");
+
+			SAY_TO_PLAYER("New leaf has been added to the tree");
+		}
+	}
+}
+
+struct Leaf_w_path get_Leaf_w_path(struct B_tree_node *root)
+{
+	struct Leaf_w_path cmp_leaf =
+	{
+		.node_path = {},
+		.name = {},
+	};
+	printf("%p\n", &cmp_leaf.node_path);
+
+	get_string(cmp_leaf.name);
+
+	STACK_CTOR(&cmp_leaf.node_path, DEFAULT_STARTER_CAPACITY);
+
+	struct B_tree_node *found_node_1 =
+		search_for_node(root, &cmp_leaf); // struct param
+
+	if(found_node_1 == NULL)
+	{
+		SAY_TO_PLAYER("There is no such leaf as %s.", cmp_leaf.name);
+		cmp_leaf = {};
+		return cmp_leaf;
+	}
+
+	return cmp_leaf;
+}
+
+error_t tell_similarities(struct Leaf_w_path *cmp_leafs,
+					      struct Current_tree_position *current_pos)
+{
+	if(FIRST_TURN == SECOND_TURN)
+	{
+		SAY_TO_PLAYER("Similarities:");
+	}
+	while(FIRST_TURN == SECOND_TURN)
+	{
+		if(FIRST_TURN == 0)
+		{
+			SAY_TO_PLAYER("NOT %s", CURRENT_NODE->data);
+			CURRENT_NODE = CURRENT_NODE->left;
+		}
+		else if(FIRST_TURN == 1)
+		{
+			SAY_TO_PLAYER("%s", CURRENT_NODE->data);
+			CURRENT_NODE = CURRENT_NODE->right;
+		}
+		else
+		{
+			SAY_TO_PLAYER("Invalid stack value: %d", FIRST_TURN);
+
+			return INVALID_NODE_PATH_TURN;
+		}
+
+		NODE_PATH_ID++;
+	}
+
+	return AKI_ALL_GOOD;
+}
+
+void tell_difference(struct Leaf_w_path *cmp_leafs,
+					 struct Current_tree_position *current_pos)
+{
+	SAY_TO_PLAYER("Difference:");
+	if(FIRST_TURN > SECOND_TURN)
+	{
+		SAY_TO_PLAYER("%s is %s but %s is not",
+			cmp_leafs[FIRST].name, CURRENT_NODE->data,
+			cmp_leafs[SECOND].name);
+	}
+	else
+	{
+		SAY_TO_PLAYER("%s is %s but %s is not",
+			cmp_leafs[SECOND].name, CURRENT_NODE->data,
+			cmp_leafs[FIRST].name);
+	}
+
+	// NODE_PATH_ID++;
+}
+
+error_t tell_additional_info(const struct Leaf_w_path *cmp_leaf,
+										struct Current_tree_position *current_pos)
+{
+	#define NODE_PATH cmp_leaf->node_path
+
+	struct Current_tree_position old_current_pos =
+	{
+		.current_node = CURRENT_NODE,
+		.node_path_ID = NODE_PATH_ID,
+	};
+
+	if(NODE_PATH.data[NODE_PATH_ID] == (int)RIGHT_CHILD)
+	{
+		CURRENT_NODE = CURRENT_NODE->right;
+	}
+	else if(NODE_PATH.data[NODE_PATH_ID] == (int)LEFT_CHILD)
+	{
+		CURRENT_NODE = CURRENT_NODE->left;
+	}
+	else
+	{
+		return INVALID_NODE_PATH_TURN;
+	}
+
+	NODE_PATH_ID++;
+
+	if(NODE_PATH_ID < NODE_PATH.size)
+	{
+		SAY_TO_PLAYER("In addition %s is:", cmp_leaf->name);
+	}
+	while(NODE_PATH_ID < NODE_PATH.size)
+	{
+		if(NODE_PATH.data[NODE_PATH_ID] == 0)
+		{
+			SAY_TO_PLAYER("NOT %s", CURRENT_NODE->data);
+			CURRENT_NODE = CURRENT_NODE->left;
+		}
+		else if(NODE_PATH.data[NODE_PATH_ID] == 1)
+		{
+			SAY_TO_PLAYER("%s", CURRENT_NODE->data);
+			CURRENT_NODE =
+				CURRENT_NODE->right;
+		}
+		else
+		{
+			SAY_TO_PLAYER("Invalid stack value: %d",
+			NODE_PATH.data[NODE_PATH_ID]);
+			return INVALID_NODE_PATH_TURN;
+		}
+
+		NODE_PATH_ID++;
+	}
+
+	CURRENT_NODE = old_current_pos.current_node;
+	NODE_PATH_ID = old_current_pos.node_path_ID;
+
+	#undef NODE_PATH
+
+	return AKI_ALL_GOOD;
+}
+
+void open_static_log_file(void)
+{
+	static FILE *log_file = fopen("test_log_file.txt", "w");
+}

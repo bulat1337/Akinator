@@ -22,19 +22,9 @@ int main()
 // 	set_root(btr, 0);
 //
 // 	create_data_base(btr, "data_base.txt");
-//
+
 // 	b_tree_dump(btr, AKI_ALL_GOOD, __func__);
 
-// 	struct Stack stk = {};
-// 	STACK_CTOR(&stk, 10);
-// 	struct B_tree_node *found_node = search_for_node(btr->root, "chubarov", &stk);
-//
-// 	if(found_node != NULL)
-// 	{
-// 		printf("found: %s\n", found_node->data);
-// 	}
-//
-//
 	play_akinator("data_base.txt");
 
 

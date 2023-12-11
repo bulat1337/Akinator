@@ -3,7 +3,7 @@
 
 #include "akinator.h"
 
-struct Ask_question_result
+struct Guess_result
 {
 	struct B_tree_node *parent;
 	bool is_right_child;
@@ -24,13 +24,25 @@ void free_memory(struct B_tree *btr);
 void print_node(struct B_tree_node *node, FILE *data_base);
 void node_delete(struct B_tree_node *node);
 error_t assign_value(b_tree_elem_t *data, const b_tree_elem_t assigned_value);
-struct Ask_question_result ask_question(struct B_tree_node *parent, bool is_right_child);
+struct Guess_result ask_question(struct B_tree_node *parent, bool is_right_child);
 void clear_buffer(void);
 size_t get_amount_of_nodes(char * *lexemes, size_t amount_of_lexemes);
-char get_menu_option_answer(void);
+enum Menu_option get_menu_option_answer(void);
 error_t update_current_node_according_to_path(int current_turn, struct B_tree_node *current_node);
 size_t min_size_t(size_t num_1, size_t num_2);
-struct B_tree_node *get_final_guess(struct Ask_question_result *ask_result);
+struct B_tree_node *get_final_guess(const struct Guess_result *guess_result);
 void get_string(char *answer);
+struct Guess_result guess_leaf(struct B_tree *btr);
+void process_guess_validation(char player_answer,
+							  const struct Guess_result *guess_result,
+							  struct B_tree *btr);
+struct Leaf_w_path get_Leaf_w_path(struct B_tree_node *root);
+error_t tell_similarities(struct Leaf_w_path *cmp_leafs,
+					   struct Current_tree_position *current_pos);
+void tell_difference(struct Leaf_w_path *cmp_leafs,
+					   struct Current_tree_position *current_pos);
+error_t tell_additional_info(const struct Leaf_w_path *cmp_leaf,
+										struct Current_tree_position *current_pos);
+void open_static_log_file(void);
 
 #endif

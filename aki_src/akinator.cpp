@@ -20,9 +20,8 @@ struct B_tree_ctor_result b_tree_ctor(size_t starter_capacity)
 	struct B_tree_ctor_result result =
 	{
 		.error_code = AKI_ALL_GOOD,
-		.new_btr = (struct B_tree *)calloc(1, sizeof(struct B_tree)), // проверка if NULL есть
+		.new_btr = (struct B_tree *)calloc(1, sizeof(struct B_tree)),
 	};
-
 	log_file = fopen("log_file.txt", "w");
 	if(log_file == NULL)
 	{
@@ -49,7 +48,7 @@ struct B_tree_ctor_result b_tree_ctor(size_t starter_capacity)
 	mark_b_tree_nodes_as_free(btr->node, btr->capacity, 0);
 	btr->node[0].right = &(btr->node[1]);
 
-	btr->root = NULL;
+	btr->root = FREE_NODE;
 
 	btr->current_free = &(btr->node[0]);
 
@@ -105,7 +104,7 @@ struct Generate_code_for_graphic_dump_result generate_code_for_graphic_dump(stru
 		"label = \"{ROOT: %p| CUR_FREE: %p | CAPACITY: %lu}\"];\n"
 	"}\n", btr->root, btr->current_free, btr->capacity);
 
-	if(btr->root != NULL)
+	if(btr->root != FREE_NODE)
 	{
 		print_regular_nodes(btr->root, &nd_description, result.graphic_dump_code_file_ptr);
 	}
@@ -273,8 +272,8 @@ struct Construct_b_tree_result construct_b_tree(const char *data_base_file_name)
 void op_del(struct B_tree *btr)
 {
 	btr->capacity = 0;
-	btr->current_free = NULL;
-	btr->root = NULL;
+	btr->current_free = FREE_NODE;
+	btr->root = FREE_NODE;
 	fclose(log_file);
 
 	free_memory(btr);
@@ -323,19 +322,19 @@ error_t b_tree_verifier(struct B_tree *btr)
 
 error_t destroy_subtree(struct B_tree_node *parent_node, bool is_left_child)
 {
-	if(parent_node == NULL)
+	if(parent_node == FREE_NODE)
 	{
 		return PARENT_NODE_IS_FREE;
 	}
 	if(is_left_child)
 	{
 		node_delete(parent_node->left);
-		parent_node->left = NULL;
+		parent_node->left = FREE_NODE;
 	}
 	else if(!is_left_child)
 	{
 		node_delete(parent_node->right);
-		parent_node->right = NULL;
+		parent_node->right = FREE_NODE;
 	}
 	else
 	{
@@ -350,7 +349,7 @@ struct Create_node_result create_node(struct B_tree *btr, const b_tree_elem_t va
 	struct Create_node_result result =
 	{
 		.error_code = AKI_ALL_GOOD,
-		.created_node = NULL,
+		.created_node = FREE_NODE,
 	};
 
     if((result.error_code = b_tree_verifier(btr)) != AKI_ALL_GOOD)
@@ -376,18 +375,18 @@ struct Create_node_result create_node(struct B_tree *btr, const b_tree_elem_t va
 	if(assigning_error != AKI_ALL_GOOD)
 	{
 		result.error_code = assigning_error;
-		result.created_node = NULL;
+		result.created_node = FREE_NODE;
 		return result;
 	}
-    result.created_node->left = NULL;
-    result.created_node->right = NULL;
+    result.created_node->left = FREE_NODE;
+    result.created_node->right = FREE_NODE;
 
     return result;
 }
 
 error_t add_child(struct B_tree_node *parent, struct B_tree_node *child, bool is_right_child)
 {
-	if(parent == NULL || child == NULL)
+	if(parent == FREE_NODE || child == FREE_NODE)
 	{
 		return B_TREE_NODE_NULL_PTR;
 	}
@@ -420,38 +419,12 @@ error_t set_root(struct B_tree *btr, int root_ID)
 
 error_t play_akinator(const char *data_base_file_name)
 {
-	#define AFTER_TASK_CHOISE														\
-		printf("[m] - to go to the main menu\n"); 									\
-		printf("[q] - to quit\n");													\
-																					\
-		player_answer = get_menu_option_answer();		    						\
-																					\
-		switch(player_answer)														\
-		{																			\
-			case 'm':																\
-			{																		\
-				break;  								    						\
-			}																		\
-			case 'q':																\
-			{																		\
-				SAY_TO_PLAYER("Okay bye then...");									\
-				return AKI_ALL_GOOD;												\
-				break;																\
-			}																		\
-			default:																\
-			{																		\
-				printf("Unknown menu option![%c] "									\
-				"But im going to the main menu anyways lol.\n", player_answer);		\
-				break;																\
-			}																		\
-		}
-
 	while(true)
 	{
-		char player_answer = 'q';
+		enum Menu_option player_answer = QUIT;
 		char line_to_say[AKINATOR_LINE_MAX_LEN] = {};
 
-		struct Construct_b_tree_result ctor_result = construct_b_tree("data_base.txt");
+		struct Construct_b_tree_result ctor_result = construct_b_tree(data_base_file_name);
 
 		if(ctor_result.error_code != AKI_ALL_GOOD)
 		{
@@ -461,6 +434,7 @@ error_t play_akinator(const char *data_base_file_name)
 		}
 
 		struct B_tree *btr = ctor_result.btr;
+
 		printf("\t\tAKINATOR MENU\n");
 		printf("\t[s] - to start the game\n");
 		printf("\t[b] - to show data base\n");
@@ -472,304 +446,116 @@ error_t play_akinator(const char *data_base_file_name)
 
 		switch(player_answer)
 		{
-			case 'q':
+			case QUIT:
 			{
 				SAY_TO_PLAYER("Okay bye then...");
 				return AKI_ALL_GOOD;
 				break;
 			}
-			case 's':
+			case START:
 			{
-				SAY_TO_PLAYER("You already guessed someone?");
-				SAY_TO_PLAYER("Answer the following questions and I will tell you who it is.");
+				struct Guess_result guess_result = guess_leaf(btr);
 
-				struct B_tree_node finctitious_root_parent =
-				{
-					.data = "dont_look_at_me",
-					.left = btr->root,
-					.right = btr->root,
-				};
+				struct B_tree_node *final_guess = get_final_guess(&guess_result);
 
-				struct Ask_question_result ask_result =
-					ask_question(&finctitious_root_parent, true);
-
-
-				struct B_tree_node *final_guess = get_final_guess(&ask_result);
 				SAY_TO_PLAYER("Is your guess %s?", final_guess->data);
 
 				player_answer = get_menu_option_answer();
 
-				if(player_answer == 'y')
-				{
-					SAY_TO_PLAYER("Too slow, too weak, too easy");
-
-					AFTER_TASK_CHOISE;
-				}
-				else
-				{
-					char new_leaf_data[MAX_NEW_NODE_DATA_STRLEN] = {};
-					char new_question[MAX_NEW_NODE_DATA_STRLEN]  = {};
-
-					SAY_TO_PLAYER("damn... what or who was it then?");
-
-					get_string(new_leaf_data);
-
-					SAY_TO_PLAYER("And how does he differ from %s?", final_guess->data);
-
-					get_string(new_question);
-
-					SAY_TO_PLAYER("U wanna add new leaf "
-								  "with the corresponding question to the data base?");
-					printf("New leaf: %s\n", new_leaf_data);
-					printf("New question: %s\n", new_question);
-
-					player_answer = get_menu_option_answer();
-
-					if(player_answer == 'y')
-					{
-						struct B_tree_node *new_leaf =
-							create_node(btr, new_leaf_data).created_node;
-						struct B_tree_node *new_question_node =
-							create_node(btr, new_question).created_node;
-
-						add_child(new_question_node, final_guess, false);
-						add_child(new_question_node, new_leaf, true);
-						if(ask_result.is_right_child)
-						{
-							add_child(ask_result.parent, new_question_node, true);
-						}
-						else
-						{
-							add_child(ask_result.parent, new_question_node, false);
-						}
-
-						create_data_base(btr, "data_base.txt");
-
-						SAY_TO_PLAYER("New leaf has been added to the tree");
-					}
-				}
+				process_guess_validation(player_answer, &guess_result, btr);
 
 				break;
 			}
-			case 'b':
+			case SHOW_DATA_BASE:
 			{
 				SAY_TO_PLAYER("Generating data base...");
+
 				system("rm b_tree_graphic_dump.dot");
 				system("rm b_tree_graphic_dump.png");
-				generate_code_for_graphic_dump(btr);
-				system("dot -Tpng b_tree_graphic_dump.dot -o b_tree_graphic_dump.png -Gdpi=100");
 
-				AFTER_TASK_CHOISE;
+				generate_code_for_graphic_dump(btr);
+
+				system("dot -Tpng b_tree_graphic_dump.dot"
+					   " -o b_tree_graphic_dump.png -Gdpi=100");
+				system("open b_tree_graphic_dump.png");
+
 
 				break;
 			}
-			case 'd':
+			case DESCRIBE:
 			{
-				char desired_data[MAX_NEW_NODE_DATA_STRLEN] = {};
-
 				SAY_TO_PLAYER("Who you wanna describe?");
 
-				get_string(desired_data);
+				struct Leaf_w_path leaf_w_path = {};
 
-				struct Stack node_path = {};
-				STACK_CTOR(&node_path, DEFAULT_STARTER_CAPACITY);
+				get_string(leaf_w_path.name);
+
+				STACK_CTOR(&(leaf_w_path.node_path), DEFAULT_STARTER_CAPACITY);
 
 				struct B_tree_node *found_node =
-					search_for_node(btr->root, desired_data, &node_path);
+					search_for_node(btr->root, &leaf_w_path);
 
-				if(found_node != NULL)
+				if(found_node != FREE_NODE)
 				{
 					int current_turn = INDEX_POISON;
-					struct B_tree_node *current_node = btr->root;
-					for(size_t ID = 0; ID < node_path.size; ID++)
+					struct B_tree_node *current_node = btr->root; //start_node
+					for(size_t ID = 0; ID < leaf_w_path.node_path.size; ID++) //end_node
 					{
-						current_turn = node_path.data[ID];
-						if(current_turn == 0)
-						{
-							SAY_TO_PLAYER("NOT ");
-						}
-						else if(current_turn == 1)
-						{
-							;
-						}
-						else
-						{
-							return INVALID_NODE_PATH_TURN;
-						}
+						current_turn = leaf_w_path.node_path.data[ID];
 
-						SAY_TO_PLAYER("%s", current_node->data);
 
 						if(current_turn == 0)
 						{
+							SAY_TO_PLAYER("NOT %s", current_node->data);
 							current_node = current_node->left;
 						}
 						else if(current_turn == 1)
 						{
+							SAY_TO_PLAYER("%s", current_node->data);
 							current_node = current_node->right;
 						}
 						else
 						{
 							return INVALID_NODE_PATH_TURN;
 						}
-
 					}
 				}
 				else
 				{
-					SAY_TO_PLAYER("There is no such leaf as %s.\n", desired_data);
+					SAY_TO_PLAYER("There is no such leaf as %s.\n", leaf_w_path.name);
 				}
 
-				AFTER_TASK_CHOISE;
+				stack_dtor(&leaf_w_path.node_path);
 
 				break;
 			}
-			case 'c':
+			case COMPARE:
 			{
 				SAY_TO_PLAYER("Who you wanna compare?");
 
+				struct Leaf_w_path cmp_leafs[2] = {};
 
-				char compared_leaf_1[MAX_NEW_NODE_DATA_STRLEN] = {};
 				printf("First compared leaf: \n");
-
-				get_string(compared_leaf_1);
-
-				struct Stack node_path_1 = {};
-				STACK_CTOR(&node_path_1, DEFAULT_STARTER_CAPACITY);
-
-				struct B_tree_node *found_node_1 =
-					search_for_node(btr->root, compared_leaf_1, &node_path_1);
-
-				if(found_node_1 == NULL)
-				{
-					SAY_TO_PLAYER("There is no such leaf as %s.", compared_leaf_1);
-					AFTER_TASK_CHOISE;
-				}
-
-				char compared_leaf_2[MAX_NEW_NODE_DATA_STRLEN] = {};
+				cmp_leafs[FIRST]  =  get_Leaf_w_path(btr->root);
 
 				printf("Second compared leaf: \n");
+				cmp_leafs[SECOND] = get_Leaf_w_path(btr->root);
 
-				get_string(compared_leaf_2);
 
-				struct Stack node_path_2 = {};
-				STACK_CTOR(&node_path_2, DEFAULT_STARTER_CAPACITY);
 
-				struct B_tree_node *found_node_2 =
-					search_for_node(btr->root, compared_leaf_2, &node_path_2);
-
-				if(found_node_2 == NULL)
+				struct Current_tree_position current_pos =
 				{
-					SAY_TO_PLAYER("There is no such leaf as %s.", compared_leaf_2);
-					AFTER_TASK_CHOISE;
-				}
+					.node_path_ID = 0,
+					.current_node = btr->root,
+				};
 
-				//Similarities
-				size_t stack_ID = 0;
-				struct B_tree_node *current_node = btr->root;
+				tell_similarities(cmp_leafs, &current_pos); //return error handle
 
-				SAY_TO_PLAYER("Similarities:");
-				while(node_path_1.data[stack_ID] == node_path_2.data[stack_ID])
-				{
-					if(node_path_1.data[stack_ID] == 0)
-					{
-						SAY_TO_PLAYER("NOT ");
-					}
-					else if(node_path_1.data[stack_ID] == 1)
-					{
-						;
-					}
-					else
-					{
-						SAY_TO_PLAYER("Invalid stack value: %d", node_path_1.data[stack_ID]);
-						return INVALID_NODE_PATH_TURN;
-					}
+				tell_difference(cmp_leafs, &current_pos);
 
-					SAY_TO_PLAYER("%s", current_node->data);
+				tell_additional_info(&cmp_leafs[FIRST],  &current_pos); //return error handle
+				tell_additional_info(&cmp_leafs[SECOND], &current_pos); //return error handle
 
-
-					if(node_path_1.data[stack_ID] == 0)
-					{
-						current_node = current_node->left;
-					}
-					else if(node_path_1.data[stack_ID] == 1)
-					{
-						current_node = current_node->right;
-					}
-					else
-					{
-						SAY_TO_PLAYER("Invalid stack value: %d", node_path_1.data[stack_ID]);
-						return INVALID_NODE_PATH_TURN;
-					}
-
-					stack_ID++;
-				}
-				//
-
-				//Difference
-				struct B_tree_node *current_node_1 = current_node;
-				struct B_tree_node *current_node_2 = current_node;
-				SAY_TO_PLAYER("Difference:");
-
-				if(node_path_1.data[stack_ID] > node_path_2.data[stack_ID])
-				{
-					SAY_TO_PLAYER("%s is %s but %s is not",
-						compared_leaf_1, current_node->data, compared_leaf_2);
-					current_node_1 = current_node_1->right;
-					current_node_2 = current_node_2->left;
-				}
-				else
-				{
-					SAY_TO_PLAYER("%s is %s but %s is not",
-						compared_leaf_2, current_node->data, compared_leaf_1);
-					current_node_1 = current_node_1->left;
-					current_node_2 = current_node_2->right;
-				}
-				stack_ID++;
-				//
-
-				//Additional_info_1
-				size_t stack_ID_1 = stack_ID;
-				size_t stack_ID_2 = stack_ID;
-
-				if(stack_ID_1 < node_path_1.size)
-				{
-					SAY_TO_PLAYER("In addition %s is:", compared_leaf_1);
-				}
-				while(stack_ID_1 < node_path_1.size)
-				{
-					if(node_path_1.data[stack_ID_1] == 0)
-					{
-						SAY_TO_PLAYER("NOT ");
-					}
-					else if(node_path_1.data[stack_ID_1] == 1)
-					{
-						;
-					}
-					else
-					{
-						SAY_TO_PLAYER("Invalid stack value: %d", node_path_1.data[stack_ID_1]);
-						return INVALID_NODE_PATH_TURN;
-					}
-
-					SAY_TO_PLAYER("%s", current_node_1->data);
-
-					if(node_path_1.data[stack_ID_1] == 0)
-					{
-						current_node_1 = current_node_1->left;
-					}
-					else if(node_path_1.data[stack_ID_1] == 1)
-					{
-						current_node_1 = current_node_1->right;
-					}
-					else
-					{
-						return INVALID_NODE_PATH_TURN;
-					}
-
-					stack_ID_1++;
-				}
-
-				AFTER_TASK_CHOISE;
 				break;
 			}
 			default:
@@ -779,45 +565,70 @@ error_t play_akinator(const char *data_base_file_name)
 				break;
 			}
 		}
+
+		printf("[m] - to go to the main menu\n");
+		printf("[q] - to quit\n");
+
+		player_answer = get_menu_option_answer();
+
+		switch(player_answer)
+		{
+			case 'm':
+			{
+				break;
+			}
+			case 'q':
+			{
+				SAY_TO_PLAYER("Okay bye then...");
+				return AKI_ALL_GOOD;
+				break;
+			}
+			default:
+			{
+				printf("Unknown menu option![%c] "
+				"But im going to the main menu anyways lol.\n", player_answer);
+				break;
+			}
+		}
 	}
 
-	#undef AFTER_TASK_CHOISE
 
 	//dead_zone
+	printf("Something is definitly very wrong "
+		   "because the program is on %lu line\n", __LINE__);
 	exit(EXIT_FAILURE);
 }
 
-struct B_tree_node *search_for_node(struct B_tree_node *node, const char *data,
-									struct Stack *node_path_stk)
+struct B_tree_node *search_for_node(struct B_tree_node *node, struct Leaf_w_path *leaf_w_path)
 {
 
-	if(node == NULL)
+	if(node == FREE_NODE)
 	{
-		STACK_POP(node_path_stk);
-		return NULL;
+		STACK_POP(&leaf_w_path->node_path);
+		return FREE_NODE;
 	}
 
-	if(!strncmp(node->data, data, strlen(data)))
+	if(!strncmp(node->data, leaf_w_path->name, strlen(leaf_w_path->name)))
 	{
 		return node;
 	}
 
-	struct B_tree_node *found_node = NULL;
+	struct B_tree_node *found_node = FREE_NODE;
 
-	STACK_PUSH(node_path_stk, 0);
-	found_node = search_for_node(node->left, data, node_path_stk);
-	if(found_node != NULL)
+	STACK_PUSH(&leaf_w_path->node_path, 0);
+	found_node = search_for_node(node->left, leaf_w_path);
+	if(found_node != FREE_NODE)
 	{
 		return found_node;
 	}
 
-	STACK_PUSH(node_path_stk, 1);
-	found_node = search_for_node(node->right, data, node_path_stk);
-	if(found_node != NULL)
+	STACK_PUSH(&leaf_w_path->node_path, 1);
+	found_node = search_for_node(node->right, leaf_w_path);
+	if(found_node != FREE_NODE)
 	{
 		return found_node;
 	}
 
-	STACK_POP(node_path_stk);
-	return NULL;
+	STACK_POP(&leaf_w_path->node_path);
+	return FREE_NODE;
 }
