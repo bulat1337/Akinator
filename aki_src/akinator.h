@@ -4,12 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <stdarg.h>
 
 #include "../stack_src/stack.h"
-
-#define WRITE_IN_LOG_FILE(...)\
-	open_static_log_file();\
- 	fprintf(log_file, __VA_ARGS__);
 
 #define SAY_TO_PLAYER(...)\
 		printf(__VA_ARGS__);\
@@ -17,6 +14,15 @@
 		// snprintf(line_to_say, 100, "say -vReed " __VA_ARGS__);\
 		// system(line_to_say); // systemf()
 
+#define HANDLE_ERROR															\
+{																				\
+	if(error_code != AKI_ALL_GOOD)												\
+	{																			\
+		b_tree_dump(btr, error_code, __func__);									\
+																				\
+		return error_code;														\
+	}																			\
+}
 
 enum Aki_err_ID
 {
@@ -76,46 +82,26 @@ struct B_tree
 	struct B_tree_node *current_free;
 };
 
-struct Generate_code_for_graphic_dump_result
+union Second_arg
 {
-	error_t error_code;
-	FILE *graphic_dump_code_file_ptr;
+	FILE               *file_ptr;
+	struct B_tree      *btr;
+	int                 int_val;
+	size_t              size_t_val;
+	struct              Stack stk;
+	struct B_tree_node *node;
 };
 
-struct B_tree_ctor_result
+struct Universal_ret
 {
 	error_t error_code;
-	struct B_tree *new_btr;
-};
-
-struct B_tree_insert_result
-{
-	error_t error_code;
-	int inserted_elem_ID;
-};
-
-struct Construct_b_tree_result
-{
-	error_t error_code;
-	struct B_tree *btr;
+	union Second_arg second_arg;
 };
 
 struct Lexemes_w_carriage
 {
 	char * *buf;
-	size_t carriage;
-};
-
-struct Create_data_base_result
-{
-	error_t error_code;
-	FILE *data_base;
-};
-
-struct Create_node_result
-{
-	error_t error_code;
-	struct B_tree_node *created_node;
+	size_t  carriage;
 };
 
 struct Search_for_node_result
@@ -136,20 +122,26 @@ struct Current_tree_position
 	struct B_tree_node *current_node;
 };
 
-struct  B_tree_ctor_result b_tree_ctor(size_t starter_capacity);
-struct Generate_code_for_graphic_dump_result generate_code_for_graphic_dump(struct B_tree *btr);
-struct  B_tree_insert_result b_tree_insert(struct B_tree *btr, b_tree_elem_t value);
-error_t b_tree_dump(const struct B_tree *btr, error_t error_code, const char *func_name);
-struct Construct_b_tree_result construct_b_tree(const char *data_base_file_name);
-void    op_del(struct B_tree *btr);
-struct Create_data_base_result create_data_base(struct B_tree *btr, const char *file_name);
-error_t b_tree_verifier(struct B_tree *btr);
-error_t destroy_subtree(struct B_tree *btr, int parent_index, bool is_left_child);
-struct Create_node_result create_node(struct B_tree *btr, const b_tree_elem_t value);
-error_t add_child(struct B_tree_node *parent, struct B_tree_node *child, bool is_right_child);
-error_t set_root(struct B_tree *btr, int root_ID);
-error_t play_akinator(const char *data_base_file_name);
-struct B_tree_node *search_for_node(struct B_tree_node *node, struct Leaf_w_path *cmp_leaf);
+
+void                 op_del(struct B_tree *btr);
+void                 log(const char *fmt, ...);
+
+error_t 		     b_tree_dump(const struct B_tree *btr, error_t error_code,
+								const char *func_name);
+error_t              b_tree_verifier(struct B_tree *btr);
+error_t              destroy_subtree(struct B_tree *btr, int parent_index, bool is_left_child);
+error_t              add_child(struct B_tree_node *parent,
+							  struct B_tree_node *child, bool is_right_child);
+error_t              set_root(struct B_tree *btr, int root_ID);
+error_t              play_akinator(const char *data_base_file_name);
+
+struct B_tree_node 	*search_for_node(struct B_tree_node *node, struct Leaf_w_path *cmp_leaf);
+
+struct Universal_ret create_node(struct B_tree *btr, const b_tree_elem_t value);
+struct Universal_ret construct_b_tree(const char *data_base_file_name);
+struct Universal_ret b_tree_ctor(size_t starter_capacity);
+struct Universal_ret generate_code_for_graphic_dump(struct B_tree *btr);
+struct Universal_ret create_data_base(struct B_tree *btr, const char *file_name);
 
 
 #endif

@@ -9,7 +9,7 @@
 #define SECOND_TURN cmp_leafs[SECOND].node_path.data[NODE_PATH_ID]
 #define CURRENT_NODE current_pos->current_node
 
-extern FILE *log_file;
+extern char line_to_say[AKINATOR_LINE_MAX_LEN];
 
 struct node_charachteristics
 {
@@ -107,12 +107,12 @@ error_t b_tree_realloc(struct B_tree *btr)
 	btr->node = (struct B_tree_node *)realloc(btr->node, data_size);
 	if(btr->node == NULL)
 	{
-		WRITE_IN_LOG_FILE("Unable to allocate btr->node\n");
+		log("Unable to allocate btr->node\n");
 		return UNABLE_TO_ALLOCATE;
 	}
 
 	size_t new_allocated_areas_start_ID = (btr->capacity / REALLOC_COEFF) - 1;
-	WRITE_IN_LOG_FILE("new_allocated_areas_start_ID == %lu\n", new_allocated_areas_start_ID);
+	log("new_allocated_areas_start_ID == %lu\n", new_allocated_areas_start_ID);
 
 	mark_b_tree_nodes_as_free(btr->node, btr->capacity, new_allocated_areas_start_ID);
 
@@ -125,35 +125,24 @@ error_t b_tree_realloc(struct B_tree *btr)
 	return error_code;
 }
 
+#define IS_CURRENT_LEXEM(lexem)\
+!strncmp(data_base_buf_w_info->buf[data_base_buf_w_info->carriage], lexem, strlen(lexem))
+
+#define MOVE_CARRIAGE (data_base_buf_w_info->carriage)++;
+
 void read_node(struct Lexemes_w_carriage *data_base_buf_w_info, int *current_node_ID,
 				struct B_tree_node *node)
 {
-	#define IS_CURRENT_LEXEM(lexem)\
-		!strncmp(data_base_buf_w_info->buf[data_base_buf_w_info->carriage], lexem, strlen(lexem))
-
-	#define MOVE_CARRIAGE (data_base_buf_w_info->carriage)++;
-
-	WRITE_IN_LOG_FILE("*(current_node_ID): %d\n", *(current_node_ID));
+	log("*(current_node_ID): %d\n", *(current_node_ID));
 
 	int current_function_node_ID = *(current_node_ID);
 
-	WRITE_IN_LOG_FILE("current_function_node_ID: %d\n", current_function_node_ID);
-
-// 	if(IS_CURRENT_LEXEM("nil"))
-// 	{
-// 		WRITE_IN_LOG_FILE("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
-// 				data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
-// 		WRITE_IN_LOG_FILE("*returning*\n");
-//
-// 		MOVE_CARRIAGE;
-//
-// 		return;
-// 	}
+	log("current_function_node_ID: %d\n", current_function_node_ID);
 
 	//	Current_node_process
 	if(IS_CURRENT_LEXEM("("))
 	{
-		WRITE_IN_LOG_FILE("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
+		log("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
 						   data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
 
 		MOVE_CARRIAGE;
@@ -161,10 +150,8 @@ void read_node(struct Lexemes_w_carriage *data_base_buf_w_info, int *current_nod
 		// Write_in_data
 		assign_value(&(node[current_function_node_ID].data),
 			data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
-		// sscanf(data_base_buf_w_info->buf[data_base_buf_w_info->carriage],
-		// 		"%s", node[current_function_node_ID].data);
 
-		WRITE_IN_LOG_FILE("node[%d].data = %s\n", current_function_node_ID,
+		log("node[%d].data = %s\n", current_function_node_ID,
 						   node[current_function_node_ID].data);
 
 		MOVE_CARRIAGE;
@@ -172,24 +159,24 @@ void read_node(struct Lexemes_w_carriage *data_base_buf_w_info, int *current_nod
 		// Left_node_process
 		if(IS_CURRENT_LEXEM("nil"))
 		{
-			WRITE_IN_LOG_FILE("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
+			log("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
 							   data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
 
 			node[current_function_node_ID].left = NULL;
 
-			WRITE_IN_LOG_FILE("node[%d].left = %p\n",
+			log("node[%d].left = %p\n",
 							   current_function_node_ID, node[current_function_node_ID].left);
 
 			MOVE_CARRIAGE;
 		}
 		else if(IS_CURRENT_LEXEM("("))
 		{
-			WRITE_IN_LOG_FILE("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
+			log("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
 							   data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
 
 			node[current_function_node_ID].left = &node[++(*current_node_ID)];
 
-			WRITE_IN_LOG_FILE("node[%d].left = %d\n",
+			log("node[%d].left = %d\n",
 							   current_function_node_ID, node[current_function_node_ID].left);
 
 			read_node(data_base_buf_w_info, current_node_ID, node);
@@ -206,23 +193,23 @@ void read_node(struct Lexemes_w_carriage *data_base_buf_w_info, int *current_nod
 		// Right_node_process
 		if(IS_CURRENT_LEXEM("nil"))
 		{
-			WRITE_IN_LOG_FILE("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
+			log("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
 							   data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
 
 			node[current_function_node_ID].right = NULL;
 
-			WRITE_IN_LOG_FILE("node[%d].right = %p\n",
+			log("node[%d].right = %p\n",
 							   current_function_node_ID, node[current_function_node_ID].right);
 
 			MOVE_CARRIAGE;
 		}
 		else if(IS_CURRENT_LEXEM("("))
 		{
-			WRITE_IN_LOG_FILE("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
+			log("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
 							   data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
 			node[current_function_node_ID].right = &node[++(*current_node_ID)];
 
-			WRITE_IN_LOG_FILE("node[%d].right = %p\n",
+			log("node[%d].right = %p\n",
 							   current_function_node_ID, node[current_function_node_ID].right);
 
 			read_node(data_base_buf_w_info, current_node_ID, node);
@@ -239,7 +226,7 @@ void read_node(struct Lexemes_w_carriage *data_base_buf_w_info, int *current_nod
 		// Check_if_brecket_closes
 		if(IS_CURRENT_LEXEM(")"))
 		{
-			WRITE_IN_LOG_FILE("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
+			log("data_base_buf_w_info->buf[data_base_buf_w_info->carriage]: %s\n",
 				data_base_buf_w_info->buf[data_base_buf_w_info->carriage]);
 
 			MOVE_CARRIAGE;
@@ -253,10 +240,10 @@ void read_node(struct Lexemes_w_carriage *data_base_buf_w_info, int *current_nod
 			exit(EXIT_FAILURE);	// а как иначе?
 		}
 	}
-
-	#undef IS_CURRENT_LEXEM
-	#undef MOVE_CARRIAGE
 }
+
+#undef IS_CURRENT_LEXEM
+#undef MOVE_CARRIAGE
 
 void free_memory(struct B_tree *btr)
 {
@@ -309,7 +296,6 @@ error_t assign_value(b_tree_elem_t *data, const b_tree_elem_t assigned_value)
 
 struct Guess_result ask_question(struct B_tree_node *parent, bool is_right_child)
 {
-	char line_to_say[AKINATOR_LINE_MAX_LEN] = {}; //static
 	struct Guess_result result =
 	{
 		.parent = parent,
@@ -488,9 +474,9 @@ void process_guess_validation(char player_answer,
 		if(player_answer == 'y')
 		{
 			struct B_tree_node *new_leaf =
-				create_node(btr, new_leaf_data).created_node;
+				create_node(btr, new_leaf_data).second_arg.node;
 			struct B_tree_node *new_question_node =
-				create_node(btr, new_question).created_node;
+				create_node(btr, new_question).second_arg.node;
 
 			add_child(new_question_node, final_guess, LEFT_CHILD);
 			add_child(new_question_node, new_leaf, RIGHT_CHILD);
@@ -585,25 +571,24 @@ void tell_difference(struct Leaf_w_path *cmp_leafs,
 			cmp_leafs[FIRST].name);
 	}
 
-	// NODE_PATH_ID++;
 }
+
+#define NODE_PATH cmp_leaf->node_path
 
 error_t tell_additional_info(const struct Leaf_w_path *cmp_leaf,
 										struct Current_tree_position *current_pos)
 {
-	#define NODE_PATH cmp_leaf->node_path
-
 	struct Current_tree_position old_current_pos =
 	{
 		.current_node = CURRENT_NODE,
 		.node_path_ID = NODE_PATH_ID,
 	};
 
-	if(NODE_PATH.data[NODE_PATH_ID] == (int)RIGHT_CHILD)
+	if(NODE_PATH.data[NODE_PATH_ID] == (int)RIGHT_TURN)
 	{
 		CURRENT_NODE = CURRENT_NODE->right;
 	}
-	else if(NODE_PATH.data[NODE_PATH_ID] == (int)LEFT_CHILD)
+	else if(NODE_PATH.data[NODE_PATH_ID] == (int)LEFT_TURN)
 	{
 		CURRENT_NODE = CURRENT_NODE->left;
 	}
@@ -618,6 +603,49 @@ error_t tell_additional_info(const struct Leaf_w_path *cmp_leaf,
 	{
 		SAY_TO_PLAYER("In addition %s is:", cmp_leaf->name);
 	}
+
+	describe_leaf(cmp_leaf, current_pos); //handle error
+
+	CURRENT_NODE = old_current_pos.current_node;
+	NODE_PATH_ID = old_current_pos.node_path_ID;
+
+	return AKI_ALL_GOOD;
+}
+
+error_t start_akinator(struct B_tree *btr)
+{
+	struct Guess_result guess_result = guess_leaf(btr);
+
+	struct B_tree_node *final_guess = get_final_guess(&guess_result);
+
+	SAY_TO_PLAYER("Is your guess %s?", final_guess->data);
+
+	char player_answer = get_menu_option_answer();
+
+	process_guess_validation(player_answer, &guess_result, btr);
+
+	return AKI_ALL_GOOD;
+}
+
+error_t show_data_base(struct B_tree *btr)
+{
+	SAY_TO_PLAYER("Generating data base...");
+
+	system("rm b_tree_graphic_dump.dot");
+	system("rm b_tree_graphic_dump.png");
+
+	generate_code_for_graphic_dump(btr);
+
+	system("dot -Tpng b_tree_graphic_dump.dot"
+			" -o b_tree_graphic_dump.png -Gdpi=100");
+	system("open b_tree_graphic_dump.png");
+
+	return AKI_ALL_GOOD;
+}
+
+error_t describe_leaf(const struct Leaf_w_path *cmp_leaf,
+					  struct Current_tree_position *current_pos)
+{
 	while(NODE_PATH_ID < NODE_PATH.size)
 	{
 		if(NODE_PATH.data[NODE_PATH_ID] == 0)
@@ -625,11 +653,10 @@ error_t tell_additional_info(const struct Leaf_w_path *cmp_leaf,
 			SAY_TO_PLAYER("NOT %s", CURRENT_NODE->data);
 			CURRENT_NODE = CURRENT_NODE->left;
 		}
-		else if(NODE_PATH.data[NODE_PATH_ID] == 1)
+		else if(NODE_PATH.data[NODE_PATH_ID] == 1) // get_current_turn
 		{
 			SAY_TO_PLAYER("%s", CURRENT_NODE->data);
-			CURRENT_NODE =
-				CURRENT_NODE->right;
+			CURRENT_NODE = CURRENT_NODE->right;
 		}
 		else
 		{
@@ -641,15 +668,78 @@ error_t tell_additional_info(const struct Leaf_w_path *cmp_leaf,
 		NODE_PATH_ID++;
 	}
 
-	CURRENT_NODE = old_current_pos.current_node;
-	NODE_PATH_ID = old_current_pos.node_path_ID;
+	return AKI_ALL_GOOD;
+}
 
-	#undef NODE_PATH
+error_t describe_desired_leaf(struct B_tree *btr)
+{
+	struct Leaf_w_path leaf_w_path = {};
+
+	SAY_TO_PLAYER("Who you wanna describe?");
+
+	get_string(leaf_w_path.name);
+
+	STACK_CTOR(&(leaf_w_path.node_path), DEFAULT_STARTER_CAPACITY);
+
+	struct B_tree_node *found_node =
+		search_for_node(btr->root, &leaf_w_path);
+
+	if(found_node != FREE_NODE)
+	{
+		struct Current_tree_position current_pos =
+		{
+			.node_path_ID = 0,
+			.current_node = btr->root,
+		};
+
+		describe_leaf(&leaf_w_path, &current_pos);
+	}
+	else
+	{
+		SAY_TO_PLAYER("There is no such leaf as %s.\n", leaf_w_path.name);
+	}
+
+	stack_dtor(&leaf_w_path.node_path);
 
 	return AKI_ALL_GOOD;
 }
 
-void open_static_log_file(void)
+error_t compare_leafs(struct B_tree *btr)
 {
-	static FILE *log_file = fopen("test_log_file.txt", "w");
+	SAY_TO_PLAYER("Who you wanna compare?");
+
+	struct Leaf_w_path cmp_leafs[2] = {};
+
+	printf("First compared leaf: \n");
+	cmp_leafs[FIRST]  =  get_Leaf_w_path(btr->root);
+
+	printf("Second compared leaf: \n");
+	cmp_leafs[SECOND] = get_Leaf_w_path(btr->root);
+
+
+
+	struct Current_tree_position current_pos =
+	{
+		.node_path_ID = 0,
+		.current_node = btr->root,
+	};
+
+	error_t error_code = tell_similarities(cmp_leafs, &current_pos);
+	HANDLE_ERROR
+
+	tell_difference(cmp_leafs, &current_pos);
+
+	error_code = tell_additional_info(&cmp_leafs[FIRST],  &current_pos);
+	HANDLE_ERROR
+
+	error_code = tell_additional_info(&cmp_leafs[SECOND], &current_pos);
+	HANDLE_ERROR
+
+	return AKI_ALL_GOOD;
 }
+
+#undef NODE_PATH
+#undef NODE_PATH_ID
+#undef FIRST_TURN
+#undef SECOND_TURN
+#undef CURRENT_NODE

@@ -6,7 +6,7 @@
 #include "akinator_helpers.h"
 #include "../buffer_process_src/buffer_process.h"
 
-FILE *log_file;
+char line_to_say[AKINATOR_LINE_MAX_LEN];
 
 struct node_charachteristics
 {
@@ -15,28 +15,20 @@ struct node_charachteristics
 	char *label;
 };
 
-struct B_tree_ctor_result b_tree_ctor(size_t starter_capacity)
+struct Universal_ret b_tree_ctor(size_t starter_capacity)
 {
-	struct B_tree_ctor_result result =
+	struct Universal_ret result =
 	{
 		.error_code = AKI_ALL_GOOD,
-		.new_btr = (struct B_tree *)calloc(1, sizeof(struct B_tree)),
+		.second_arg.btr = (struct B_tree *)calloc(1, sizeof(struct B_tree)),
 	};
-	log_file = fopen("log_file.txt", "w");
-	if(log_file == NULL)
-	{
-		result.error_code = AKI_ALL_GOOD;
-		log_file = stdout;
-		WRITE_IN_LOG_FILE("Unable to open log_file.txt\n");
-		return result;
-	}
 
-	struct B_tree *btr = result.new_btr;
+	struct B_tree *btr = result.second_arg.btr;
 
 	if(btr == NULL)
 	{
 		result.error_code = UNABLE_TO_ALLOCATE;
-		WRITE_IN_LOG_FILE("Unable to allocate result.new_btr\n");
+		log("Unable to allocate result.second_arg.btr\n");
 
 		return result;
 	}
@@ -57,15 +49,15 @@ struct B_tree_ctor_result b_tree_ctor(size_t starter_capacity)
 	return result;
 }
 
-struct Generate_code_for_graphic_dump_result generate_code_for_graphic_dump(struct B_tree *btr)
+struct Universal_ret generate_code_for_graphic_dump(struct B_tree *btr)
 {
-	struct Generate_code_for_graphic_dump_result result =
+	struct Universal_ret result =
 	{
 		.error_code = AKI_ALL_GOOD,
-		.graphic_dump_code_file_ptr = fopen("b_tree_graphic_dump.dot", "w"),
+		.second_arg.file_ptr = fopen("b_tree_graphic_dump.dot", "w"),
 	};
 
-	if(result.graphic_dump_code_file_ptr == NULL)
+	if(result.second_arg.file_ptr == NULL)
 	{
 		fprintf(stderr, "Unable to open list_graphic_dump.dot\n");
 
@@ -73,7 +65,7 @@ struct Generate_code_for_graphic_dump_result generate_code_for_graphic_dump(stru
 		return result;
 	}
 
-	#define WRITE_TO_DUMP_FILE(...) fprintf(result.graphic_dump_code_file_ptr, __VA_ARGS__);
+	#define WRITE_TO_DUMP_FILE(...) fprintf(result.second_arg.file_ptr, __VA_ARGS__);
 
 	WRITE_TO_DUMP_FILE("digraph BinaryTree {\n"
 	"bgcolor = \"#BAF0EC\";\n"
@@ -106,42 +98,43 @@ struct Generate_code_for_graphic_dump_result generate_code_for_graphic_dump(stru
 
 	if(btr->root != FREE_NODE)
 	{
-		print_regular_nodes(btr->root, &nd_description, result.graphic_dump_code_file_ptr);
+		print_regular_nodes(btr->root, &nd_description, result.second_arg.file_ptr);
 	}
 
-	connect_nodes(btr->root, result.graphic_dump_code_file_ptr);
+	connect_nodes(btr->root, result.second_arg.file_ptr);
 
 	WRITE_TO_DUMP_FILE("}");
 
 	#undef WRITE_TO_DUMP_FILE
 
 	free(nd_description.label);
-	fclose(result.graphic_dump_code_file_ptr);
+	fclose(result.second_arg.file_ptr);
 
 	return result;
 }
 
-error_t b_tree_dump(const struct B_tree *btr, error_t error_code, const char *func_name)
-{
-	#define DUMP_W_COND(cond, ... )\
+#define DUMP_W_COND(cond, ... )\
 	if(cond)\
 	{\
-		fprintf(log_file, __VA_ARGS__);\
+		log(__VA_ARGS__);\
 	}\
 	else\
 	{\
-		fprintf(log_file, "FAILED CONDITION: ");\
-		fprintf(log_file, #cond);\
-		fprintf(log_file, "\n");\
+		log("FAILED CONDITION: ");\
+		log(#cond);\
+		log("\n");\
 	}
+
+error_t b_tree_dump(const struct B_tree *btr, error_t error_code, const char *func_name)
+{
 	error_t dump_function_error_code = AKI_ALL_GOOD;
 
 	DUMP_W_COND(func_name, "dump called from %s function:\n", func_name);
 
 	if(btr == NULL)
 	{
-		WRITE_IN_LOG_FILE("FATAL_ERROR: pointer to the list structure is NULL\n");
-		WRITE_IN_LOG_FILE("\tbtr[%p]\n", btr);
+		log("FATAL_ERROR: pointer to the list structure is NULL\n");
+		log("\tbtr[%p]\n", btr);
 
 		return BTR_NULL_PTR;
 	}
@@ -149,9 +142,9 @@ error_t b_tree_dump(const struct B_tree *btr, error_t error_code, const char *fu
 	#define ERROR_CHECK(err_type)\
 		if(error_code & err_type)\
 		{\
-			WRITE_IN_LOG_FILE("-");\
-			WRITE_IN_LOG_FILE(#err_type);\
-			WRITE_IN_LOG_FILE("\n");\
+			log("-");\
+			log(#err_type);\
+			log("\n");\
 		}\
 
 	DUMP_W_COND(btr->node, "ID:");
@@ -161,13 +154,13 @@ error_t b_tree_dump(const struct B_tree *btr, error_t error_code, const char *fu
 	DUMP_W_COND(true, "        addresses:\n");
 	for(size_t ID = 0; ID < btr->capacity; ID++)
 	{
-		WRITE_IN_LOG_FILE("%lu     ", ID);
-		WRITE_IN_LOG_FILE("%s", btr->node[ID].data);
+		log("%lu     ", ID);
+		log("%s", btr->node[ID].data);
 		DUMP_W_COND(&((btr->node)[ID].left), "%20.p", (btr->node)[ID].left);
 		DUMP_W_COND(&((btr->node)[ID].right), "%13.p", (btr->node)[ID].right);
 		DUMP_W_COND(&(btr->node[ID]), "%20.p", &(btr->node[ID]));
 
-		WRITE_IN_LOG_FILE("\n");
+		log("\n");
 
 	}
 	DUMP_W_COND(true, "root: %p\n", btr->root);
@@ -178,16 +171,16 @@ error_t b_tree_dump(const struct B_tree *btr, error_t error_code, const char *fu
 	ERROR_CHECK(AKI_ALL_GOOD);
 	ERROR_CHECK(BTR_NULL_PTR);
 
-	#undef ERROR_CHECK
-	#undef DUMP_W_COND
-
 	return dump_function_error_code;
 }
 
-struct Construct_b_tree_result construct_b_tree(const char *data_base_file_name)
+#undef ERROR_CHECK
+#undef DUMP_W_COND
+
+struct Universal_ret construct_b_tree(const char *data_base_file_name)
 {
-	WRITE_IN_LOG_FILE("construct_b_tree log:\n");
-	Construct_b_tree_result result =
+	log("construct_b_tree log:\n");
+	struct Universal_ret result =
 	{
 		.error_code = AKI_ALL_GOOD,
 	};
@@ -252,14 +245,14 @@ struct Construct_b_tree_result construct_b_tree(const char *data_base_file_name)
 
 
 
-	result.btr = b_tree_ctor(amount_of_nodes + SPACE_FOR_NEW_NODES).new_btr;
+	result.second_arg.btr = b_tree_ctor(amount_of_nodes + SPACE_FOR_NEW_NODES).second_arg.btr;
 
 	int current_node_ID = 0;
-	result.btr->root = &(result.btr->node[current_node_ID]);
-	result.btr->capacity = amount_of_nodes + SPACE_FOR_NEW_NODES;
-	read_node(&data_base_lexemes, &(current_node_ID), result.btr->node);
+	result.second_arg.btr->root = &(result.second_arg.btr->node[current_node_ID]);
+	result.second_arg.btr->capacity = amount_of_nodes + SPACE_FOR_NEW_NODES;
+	read_node(&data_base_lexemes, &(current_node_ID), result.second_arg.btr->node);
 
-	result.btr->current_free = &(result.btr->node[current_node_ID + 1]);
+	result.second_arg.btr->current_free = &(result.second_arg.btr->node[current_node_ID + 1]);
 
 	free(data_base_lexemes.buf);
 	free(data_base_buf_w_info.buf);
@@ -274,22 +267,21 @@ void op_del(struct B_tree *btr)
 	btr->capacity = 0;
 	btr->current_free = FREE_NODE;
 	btr->root = FREE_NODE;
-	fclose(log_file);
 
 	free_memory(btr);
 
-	WRITE_IN_LOG_FILE("binary_tree has been deleted\n");
+	log("binary_tree has been deleted\n");
 }
 
-struct Create_data_base_result create_data_base(struct B_tree *btr, const char *file_name)
+struct Universal_ret create_data_base(struct B_tree *btr, const char *file_name)
 {
-	struct Create_data_base_result result=
+	struct Universal_ret result =
 	{
 		.error_code = AKI_ALL_GOOD,
-		.data_base = fopen(file_name, "w"),
+		.second_arg.file_ptr = fopen(file_name, "w"),
 	};
 
-	if(result.data_base == NULL)
+	if(result.second_arg.file_ptr == NULL)
 	{
 		perror("ERROR:");
 		result.error_code = AKI_ALL_GOOD;
@@ -297,9 +289,9 @@ struct Create_data_base_result create_data_base(struct B_tree *btr, const char *
 		return result;
 	}
 
-	print_node(btr->root, result.data_base);
+	print_node(btr->root, result.second_arg.file_ptr);
 
-	fclose(result.data_base);
+	fclose(result.second_arg.file_ptr);
 
 	return result;
 }
@@ -344,12 +336,12 @@ error_t destroy_subtree(struct B_tree_node *parent_node, bool is_left_child)
 	return AKI_ALL_GOOD;
 }
 
-struct Create_node_result create_node(struct B_tree *btr, const b_tree_elem_t value)
+struct Universal_ret create_node(struct B_tree *btr, const b_tree_elem_t value)
 {
-	struct Create_node_result result =
+	struct Universal_ret result =
 	{
 		.error_code = AKI_ALL_GOOD,
-		.created_node = FREE_NODE,
+		.second_arg.node = FREE_NODE,
 	};
 
     if((result.error_code = b_tree_verifier(btr)) != AKI_ALL_GOOD)
@@ -368,18 +360,18 @@ struct Create_node_result create_node(struct B_tree *btr, const b_tree_elem_t va
         }
     }
 
-    result.created_node = btr->current_free;
-    btr->current_free = result.created_node->right;
+    result.second_arg.node = btr->current_free;
+    btr->current_free = result.second_arg.node->right;
 
-	error_t assigning_error = assign_value(&(result.created_node->data), value);
+	error_t assigning_error = assign_value(&(result.second_arg.node->data), value);
 	if(assigning_error != AKI_ALL_GOOD)
 	{
 		result.error_code = assigning_error;
-		result.created_node = FREE_NODE;
+		result.second_arg.node = FREE_NODE;
 		return result;
 	}
-    result.created_node->left = FREE_NODE;
-    result.created_node->right = FREE_NODE;
+    result.second_arg.node->left = FREE_NODE;
+    result.second_arg.node->right = FREE_NODE;
 
     return result;
 }
@@ -419,21 +411,15 @@ error_t set_root(struct B_tree *btr, int root_ID)
 
 error_t play_akinator(const char *data_base_file_name)
 {
+	error_t error_code = AKI_ALL_GOOD;
+
 	while(true)
 	{
 		enum Menu_option player_answer = QUIT;
-		char line_to_say[AKINATOR_LINE_MAX_LEN] = {};
 
-		struct Construct_b_tree_result ctor_result = construct_b_tree(data_base_file_name);
+		struct Universal_ret ctor_result = construct_b_tree(data_base_file_name);
 
-		if(ctor_result.error_code != AKI_ALL_GOOD)
-		{
-			b_tree_dump(ctor_result.btr, ctor_result.error_code, __func__);
-
-			return ctor_result.error_code;
-		}
-
-		struct B_tree *btr = ctor_result.btr;
+		struct B_tree *btr = ctor_result.second_arg.btr;
 
 		printf("\t\tAKINATOR MENU\n");
 		printf("\t[s] - to start the game\n");
@@ -449,112 +435,30 @@ error_t play_akinator(const char *data_base_file_name)
 			case QUIT:
 			{
 				SAY_TO_PLAYER("Okay bye then...");
+
 				return AKI_ALL_GOOD;
-				break;
 			}
 			case START:
 			{
-				struct Guess_result guess_result = guess_leaf(btr);
-
-				struct B_tree_node *final_guess = get_final_guess(&guess_result);
-
-				SAY_TO_PLAYER("Is your guess %s?", final_guess->data);
-
-				player_answer = get_menu_option_answer();
-
-				process_guess_validation(player_answer, &guess_result, btr);
+				start_akinator(btr);
 
 				break;
 			}
 			case SHOW_DATA_BASE:
 			{
-				SAY_TO_PLAYER("Generating data base...");
-
-				system("rm b_tree_graphic_dump.dot");
-				system("rm b_tree_graphic_dump.png");
-
-				generate_code_for_graphic_dump(btr);
-
-				system("dot -Tpng b_tree_graphic_dump.dot"
-					   " -o b_tree_graphic_dump.png -Gdpi=100");
-				system("open b_tree_graphic_dump.png");
-
+				show_data_base(btr);
 
 				break;
 			}
 			case DESCRIBE:
 			{
-				SAY_TO_PLAYER("Who you wanna describe?");
-
-				struct Leaf_w_path leaf_w_path = {};
-
-				get_string(leaf_w_path.name);
-
-				STACK_CTOR(&(leaf_w_path.node_path), DEFAULT_STARTER_CAPACITY);
-
-				struct B_tree_node *found_node =
-					search_for_node(btr->root, &leaf_w_path);
-
-				if(found_node != FREE_NODE)
-				{
-					int current_turn = INDEX_POISON;
-					struct B_tree_node *current_node = btr->root; //start_node
-					for(size_t ID = 0; ID < leaf_w_path.node_path.size; ID++) //end_node
-					{
-						current_turn = leaf_w_path.node_path.data[ID];
-
-
-						if(current_turn == 0)
-						{
-							SAY_TO_PLAYER("NOT %s", current_node->data);
-							current_node = current_node->left;
-						}
-						else if(current_turn == 1)
-						{
-							SAY_TO_PLAYER("%s", current_node->data);
-							current_node = current_node->right;
-						}
-						else
-						{
-							return INVALID_NODE_PATH_TURN;
-						}
-					}
-				}
-				else
-				{
-					SAY_TO_PLAYER("There is no such leaf as %s.\n", leaf_w_path.name);
-				}
-
-				stack_dtor(&leaf_w_path.node_path);
+				describe_desired_leaf(btr);
 
 				break;
 			}
 			case COMPARE:
 			{
-				SAY_TO_PLAYER("Who you wanna compare?");
-
-				struct Leaf_w_path cmp_leafs[2] = {};
-
-				printf("First compared leaf: \n");
-				cmp_leafs[FIRST]  =  get_Leaf_w_path(btr->root);
-
-				printf("Second compared leaf: \n");
-				cmp_leafs[SECOND] = get_Leaf_w_path(btr->root);
-
-
-
-				struct Current_tree_position current_pos =
-				{
-					.node_path_ID = 0,
-					.current_node = btr->root,
-				};
-
-				tell_similarities(cmp_leafs, &current_pos); //return error handle
-
-				tell_difference(cmp_leafs, &current_pos);
-
-				tell_additional_info(&cmp_leafs[FIRST],  &current_pos); //return error handle
-				tell_additional_info(&cmp_leafs[SECOND], &current_pos); //return error handle
+				compare_leafs(btr);
 
 				break;
 			}
@@ -580,8 +484,8 @@ error_t play_akinator(const char *data_base_file_name)
 			case 'q':
 			{
 				SAY_TO_PLAYER("Okay bye then...");
+
 				return AKI_ALL_GOOD;
-				break;
 			}
 			default:
 			{
@@ -631,4 +535,23 @@ struct B_tree_node *search_for_node(struct B_tree_node *node, struct Leaf_w_path
 
 	STACK_POP(&leaf_w_path->node_path);
 	return FREE_NODE;
+}
+
+void log(const char *fmt, ...)
+{
+    static FILE *log_file = fopen("log.txt", "w");
+
+    if (log_file == NULL)
+	{
+        perror("Error opening log_file");
+        return;
+    }
+
+    va_list args = NULL;
+
+    va_start(args, fmt);
+
+    vfprintf(log_file, fmt, args);
+
+    va_end(args);
 }
