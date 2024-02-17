@@ -11,8 +11,8 @@
 #define SAY_TO_PLAYER(...)\
 		printf(__VA_ARGS__);\
 		printf("\n");\
-		// snprintf(line_to_say, 100, "say -vReed " __VA_ARGS__);\
-		// system(line_to_say); // systemf()
+		snprintf(line_to_say, 100, "say -vReed " __VA_ARGS__);\
+		system(line_to_say); // systemf()
 
 #define HANDLE_ERROR															\
 {																				\
